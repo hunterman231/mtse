@@ -114,7 +114,7 @@ function makeStudent(s,i){
  scene.add(g);return g
 }
 let actors=students.map(makeStudent);
-const keys={};let started=false,locked=false,dialogOpen=false,detained=0,questioned=new Set(),current=null;
+const keys={};let started=false,locked=false,dialogOpen=false,detained=0,questioned=new Set(),asked=new Map(),current=null;
 const ray=new THREE.Raycaster();const center=new THREE.Vector2(0,0);let nearActor=null;
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>e.classList.remove('show'),2600)}
 function updateHud(){document.getElementById('casecount').textContent=questioned.size+' / 5';document.getElementById('detained').textContent=detained;document.getElementById('objective').textContent=detained?'A helyszín majdnem tiszta. Még '+(5-questioned.size)+' hallgatóval beszélj.':'Beszélj mindenkivel. A részletek számítanak.'}
@@ -129,7 +129,7 @@ function openDialog(s){
 }
 function ask(i){
  const s=current;const dlg=document.getElementById('dialogtext');
- dlg.textContent=s.answers[i];questioned.add(s.name);updateHud();
+ dlg.textContent=s.answers[i];const evidence=asked.get(s.name)||new Set();evidence.add(i);asked.set(s.name,evidence);questioned.add(s.name);updateHud();
  // Clues emerge through inconsistent details, not a supernatural lie detector.
  if(!s.human&&i===1)toast('A válasz túl sima. Még a portás is panaszkodik a huzatra.');
  else if(!s.human&&i===2)toast('A „Neptun” szót úgy ejtette, mintha folyó lenne.');
@@ -137,6 +137,7 @@ function ask(i){
  else toast('Feljegyezve az aktába. A részletek nem állnak össze… vagy csak fáradt vagy.');
 }
 function accuseStudent(s){
+ const evidence=asked.get(s.name);if(!evidence||evidence.size<2){toast('Még két különböző kérdésre adott válasz kell, mielőtt őrizetbe veszed.');return}
  document.getElementById('dialogue').style.display='none';dialogOpen=false;
  if(!s.human){detained++;const idx=actors.findIndex(a=>a.userData.student===s);if(idx>=0){const a=actors[idx];a.position.set(0,0,-17);a.scale.set(.72,.62,.72);a.rotation.y=Math.PI/2}
  toast('Célpont biztosítva. A zárka kulcsa a portásnál van. Valószínűleg.');
