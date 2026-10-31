@@ -178,12 +178,13 @@ ball(10,.25,-29,0xb64939);ball(11,.24,-12,0xb64939);ball(-6,.24,-4,0x47728c);
 addBox(1.3,1.1,.5,wood,12.8,.55,-4,true);addBox(.6,.09,.08,metal,12.8,1.12,-3.72);
 // Off-map sublevel: a concealed observation room with a barred live holding chamber.
 floor(14,12,27,-40);ceilingSpan(14,12,27,-40);wallX(20,-46,-34);wallX(34,-46,-34);wallZ(-46,20,34);wallZ(-34,20,34);
-const holdingGate=new THREE.Group();holdingGate.position.set(26,0,-41.6);scene.add(holdingGate);
-for(let z=-45.5;z<=-43.1;z+=.55)addBox(.08,3.6,.08,metal,26,1.8,z);
-for(let z=-36.9;z<=-34.4;z+=.55)addBox(.08,3.6,.08,metal,26,1.8,z);
-for(const zz of [-43,-37])addBox(.12,3.7,.12,metal,26,1.85,zz);
-for(let i=0;i<=6;i++)addBox(.07,3.3,.07,metal,26,1.65,-41.6+i*.53);
-for(const y of [.18,3.12])addBox(.09,.12,3.25,metal,26,y,-40);
+const holdingGate=new THREE.Group();holdingGate.position.set(26,0,-43.6);scene.add(holdingGate);
+for(let z=-45.5;z<=-43.95;z+=.55)addBox(.08,3.6,.08,metal,26,1.8,z);
+for(let z=-36.05;z<=-34.45;z+=.55)addBox(.08,3.6,.08,metal,26,1.8,z);
+for(const zz of [-43.7,-36.3])addBox(.12,3.7,.12,metal,26,1.85,zz);
+function gateBar(w,h,d,material,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;holdingGate.add(m)}
+for(let i=0;i<=13;i++)gateBar(.07,3.3,.07,metal,0,1.65,i*.55);
+for(const y of [.18,3.12])gateBar(.09,.12,7.15,metal,0,y,3.3);
 for(const z of [ -45.4,-34.6 ])addBox(1.4,.08,.65,wood,22.8,.04,z,true);
 addBox(.08,2.6,7.8,C(0x263640,.25,.25),20.15,2.25,-40);
 addBox(2.1,.12,.85,wood,22.5,.76,-40,true);
@@ -318,7 +319,7 @@ document.getElementById('start').addEventListener('click',()=>{document.getEleme
 const keys={};let yaw=0,pitch=0,dt=0,last=performance.now();
 let lookDrag=false;
 function requestLookLock(){try{const result=renderer.domElement.requestPointerLock?.();if(result&&result.catch)result.catch(()=>toast('Mouse capture is unavailable. Hold the mouse button and drag to look.'))}catch(e){toast('Mouse capture is unavailable. Hold the mouse button and drag to look.')}}
-function turnView(e){if(dialogOpen||!started||(!locked&&!lookDrag))return;yaw-=e.movementX*.0022;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.15,1.15);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)}
+function turnView(e){if(dialogOpen||monitorMode||cinematic||!started||(!locked&&!lookDrag))return;yaw-=e.movementX*.0022;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.15,1.15);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)}
 document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
 document.addEventListener('mousemove',turnView);
 renderer.domElement.addEventListener('pointerdown',e=>{if(started&&!dialogOpen&&!locked){lookDrag=true;try{renderer.domElement.setPointerCapture(e.pointerId)}catch(_){}}});
@@ -328,19 +329,20 @@ document.addEventListener('keydown',e=>{if(e.code==='Tab'){e.preventDefault();if
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.querySelectorAll('#touchPad [data-move]').forEach(button=>{const code=button.dataset.move;button.addEventListener('pointerdown',e=>{e.preventDefault();keys[code]=true;button.setPointerCapture(e.pointerId)});for(const name of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(name,()=>keys[code]=false)});
 function collides(x,z){const r=.34;return colliders.some(c=>x+r>c.minX&&x-r<c.maxX&&z+r>c.minZ&&z-r<c.maxZ)}
-function move(){if(!started||dialogOpen)return;const speed=2.8*(keys.ShiftLeft||keys.ShiftRight?1.45:1),f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));let nx=camera.position.x,nz=camera.position.z;
+function move(){if(!started||dialogOpen||monitorMode||cinematic)return;const speed=2.8*(keys.ShiftLeft||keys.ShiftRight?1.45:1),f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));let nx=camera.position.x,nz=camera.position.z;
  if(keys.KeyW||keys.ArrowUp){nx+=f.x*speed*dt;nz+=f.z*speed*dt}if(keys.KeyS||keys.ArrowDown){nx-=f.x*speed*dt;nz-=f.z*speed*dt}if(keys.KeyA||keys.ArrowLeft){nx-=r.x*speed*dt;nz-=r.z*speed*dt}if(keys.KeyD||keys.ArrowRight){nx+=r.x*speed*dt;nz+=r.z*speed*dt}
  if(!collides(nx,camera.position.z))camera.position.x=THREE.MathUtils.clamp(nx,-10.3,10.3);if(!collides(camera.position.x,nz))camera.position.z=THREE.MathUtils.clamp(nz,-44.2,2.5);camera.position.y=1.68}
 const ray=new THREE.Raycaster(),center=new THREE.Vector2(0,0);
 function tick(now){requestAnimationFrame(tick);dt=Math.min((now-last)/1000,.04);last=now;move();
  for(const l of lamps){const wave=Math.sin(now*.001*l.rate+l.phase);l.light.intensity=l.base*(l.spike&&wave>.98?.35:1+wave*.045)}
- if(started&&!dialogOpen){ray.setFromCamera(center,camera);let hits=[];for(const a of actors)a.traverse(o=>{if(o.isMesh)hits.push(o)});const hit=ray.intersectObjects(hits,false)[0];near=null;
+ if(started&&!dialogOpen&&!monitorMode&&!cinematic){ray.setFromCamera(center,camera);let hits=[];for(const a of actors)if(!a.userData.student.detained)a.traverse(o=>{if(o.isMesh)hits.push(o)});const hit=ray.intersectObjects(hits,false)[0];near=null;
   if(hit&&hit.distance<3.4){let o=hit.object;while(o.parent&&!o.userData.student)o=o.parent;if(o.userData.student){near={student:o.userData.student};document.getElementById('prompt').textContent='E — TALK TO '+o.userData.student.name.toUpperCase()}else document.getElementById('prompt').textContent=''}else document.getElementById('prompt').textContent=''
- }
- actors.forEach((a,i)=>{const s=a.userData.student;if(s){const t=now*.001;a.position.y=Math.sin(t*1.7+i)*.018;a.rotation.y=Math.sin(t*.4+i)*.08;const h=a.children.find(o=>o.isGroup);if(h)h.rotation.y=Math.sin(t*.7+i)*.06;if(s.anomaly==='eye'&&Math.sin(t*2.8)>.94)h.scale.x=1.02}});
- renderer.render(scene,camera)}
+ }else{near=null;document.getElementById('prompt').textContent=''}
+ if(!cinematic)actors.forEach((a,i)=>{const s=a.userData.student;if(s){const t=now*.001;a.position.y=s.detained?0:Math.sin(t*1.7+i)*.018;if(!s.detained)a.rotation.y=Math.sin(t*.4+i)*.08;const h=a.children.find(o=>o.isGroup);if(h&&!cinematic)h.rotation.y=Math.sin(t*.7+i)*.06;if(s.anomaly==='eye'&&Math.sin(t*2.8)>.94)h.scale.x=1.02}});
+ if(cinematic)updateCinematic(now);
+ renderer.render(scene,cinematic?cineCamera:(monitorMode?monitorCamera:camera))}
 requestAnimationFrame(tick);
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();monitorCamera.aspect=innerWidth/innerHeight;monitorCamera.updateProjectionMatrix();cineCamera.aspect=innerWidth/innerHeight;cineCamera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
 </html>
