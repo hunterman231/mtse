@@ -75,7 +75,7 @@ hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
 <div class="startrow"><button class="btn" id="start">OPEN THE CASE</button><span class="tiny">Headphones recommended.<br>Use headphones at a comfortable volume.</span></div>
 </div></div>
 <div id="hud">
-<div class="top"><div><div class="kicker">TF · Internal Affairs</div><div class="objective" id="objective">Interview the students. Watch the small details.</div></div><div class="status">INTERVIEWS <b id="interviewCount">0 / 8</b><br>CONTAINED <b class="danger" id="containedCount">0 / 2</b></div></div>
+<div class="top"><div><div class="kicker">TF · Internal Affairs</div><div class="objective" id="objective">Interview the students. Watch the small details.</div></div><div class="status">INTERVIEWED <b id="interviewCount">0 / 8</b><br>IN HOLDING <b id="containedCount">0</b><br>SKINWALKERS <b class="danger" id="skinwalkerCount">0 / 2</b></div></div>
 <div class="crosshair"></div><div id="prompt"></div>
 <div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / DETAIN · TAB — SECURITY CAMERA<br>SHIFT — WALK FASTER · HOLD + DRAG TO LOOK</div>
 <div id="touchPad" aria-label="Movement controls"><span></span><button data-move="KeyW" aria-label="Move forward">↑</button><span></span><button data-move="KeyA" aria-label="Move left">←</button><button data-move="KeyS" aria-label="Move backward">↓</button><button data-move="KeyD" aria-label="Move right">→</button></div>
@@ -270,8 +270,8 @@ function startSound(){
  audioCtx.resume();audioEnabled=!audioEnabled;musicGain.gain.setTargetAtTime(audioEnabled?.32:0,audioCtx.currentTime,.7);document.getElementById('soundToggle').textContent='SOUND: '+(audioEnabled?'ON':'OFF');
 }
 function toast(text){const el=document.getElementById('toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3000)}
-const questionsAsked=new Map(),interviewed=new Set();let contained=0,started=false,dialogOpen=false,locked=false,current=null,near=null;
-function updateHud(){document.getElementById('interviewCount').textContent=interviewed.size+' / 8';document.getElementById('containedCount').textContent=contained+' / 2';document.getElementById('objective').textContent=contained?'The holding room is secured. Find the other one.':'Interview the students. Watch the small details.'}
+const questionsAsked=new Map(),interviewed=new Set();let contained=0,skinwalkersContained=0,started=false,dialogOpen=false,locked=false,monitorMode=false,cinematic=false,current=null,near=null,cinematicStart=0,cinematicFinished=false;
+function updateHud(){document.getElementById('interviewCount').textContent=interviewed.size+' / 8';document.getElementById('containedCount').textContent=contained;document.getElementById('skinwalkerCount').textContent=skinwalkersContained+' / 2';document.getElementById('objective').textContent=cinematic?'The tape is still recording.':skinwalkersContained?'The holding room is secure. Check the feed or continue your interviews.':'Interview the students. Watch the small details.'}
 function openInterview(s){current=s;dialogOpen=true;document.exitPointerLock?.();document.getElementById('dialogue').style.display='flex';document.getElementById('person').textContent=s.name;document.getElementById('role').textContent=s.role;document.getElementById('dtext').textContent=s.opening;const box=document.getElementById('choices');box.innerHTML='';
  s.topics.forEach((topic,i)=>{const b=document.createElement('button');b.textContent='Ask about '+topic.toLowerCase();b.onclick=()=>ask(s,i);box.appendChild(b)});
  const a=document.createElement('button');a.className='warn';a.textContent='Identify as a shapeshifter';a.onclick=()=>accuse(s);box.appendChild(a);
@@ -283,15 +283,37 @@ function ask(s,i){const seen=questionsAsked.get(s.name)||new Set();seen.add(i);q
  else toast('You make a note. Tired students can sound strange at midnight.');
 }
 function accuse(s){const seen=questionsAsked.get(s.name);if(!seen||seen.size<2){toast('Ask two different questions first. An interview is not evidence.');return}
- document.getElementById('dialogue').style.display='none';dialogOpen=false;
- if(s.human){toast('The student looks exhausted, then offended. Your handler asks for stronger evidence.');if(audioEnabled)sting();if(locked)renderer.domElement.requestPointerLock();return}
- contained++;const actor=actors.find(a=>a.userData.student===s);if(actor){actor.position.set(-1.8+(contained-1)*1.7,0,-43.25);actor.rotation.y=Math.PI;actor.scale.set(.72,.76,.72)}
- toast('The subject is secured in the holding room. Keep your eyes on the corridor.');updateHud();
- if(contained>=2)setTimeout(()=>finish(),1800);if(locked)renderer.domElement.requestPointerLock()
+ if(s.detained){toast(s.name+' is already in the holding room.');return}
+ document.getElementById('dialogue').style.display='none';dialogOpen=false;s.detained=true;contained++;
+ if(!s.human)skinwalkersContained++;
+ const actor=actors.find(a=>a.userData.student===s);if(actor){const slot=contained-1;actor.position.set(27.2+(slot%4)*1.55,0,-42.4+Math.floor(slot/4)*3.15);actor.rotation.y=-Math.PI/2;actor.scale.set(.72,.76,.72)}
+ toast(s.human?s.name+' has been sent to the hidden holding room.':'The subject has been secured in the hidden holding room.');updateHud();
+ if(skinwalkersContained>=2&&!cinematic)setTimeout(startCinematic,2400);
+ if(locked)requestLookLock()
 }
 function sting(){if(!audioCtx||!musicGain)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(160,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(42,audioCtx.currentTime+1);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.15,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+1.2);o.connect(g);g.connect(musicGain);o.start();o.stop(audioCtx.currentTime+1.25)}
-function finish(){document.getElementById('hud').style.display='none';document.getElementById('end').style.display='flex';document.exitPointerLock?.();document.getElementById('endText').textContent='Both visitors are behind the holding-room bars. At dawn, the attendance sheet shows eight signatures. Your field report says there were only six students.'}
+function startCinematic(){if(cinematic)return;cinematic=true;monitorMode=false;dialogOpen=false;cinematicStart=performance.now();cinematicFinished=false;document.exitPointerLock?.();document.getElementById('monitorFrame').style.display='none';document.getElementById('hud').style.display='block';document.getElementById('cineCaption').style.display='block';document.getElementById('cineCaption').textContent='CAM 04 · SECURITY TAPE 00:41';holdingGate.rotation.y=0;
+ agent.visible=true;agent.position.set(22.2,0,-40);agent.rotation.y=Math.PI/2;
+ let victimIndex=0;for(const a of actors){const s=a.userData.student;if(!s)continue;if(!s.human)makeTentacles(a);else{const k=victimIndex++;a.position.set(21.3+(k%3)*1.15,0,-36.5-Math.floor(k/3)*1.45);a.rotation.y=-Math.PI/2;a.scale.set(.62,.66,.62)}}
+ sting()
+}
+function updateCinematic(now){const t=(now-cinematicStart)/1000;agent.position.x=22.2+Math.min(t/4.2,1)*5.8;holdingGate.rotation.y=t<.7?0:Math.min((t-.7)*.75,1.45);
+ if(t>3.8){if(!agent.userData.tentacles)makeTentacles(agent);agent.userData.tentacles.scale.setScalar(Math.min((t-3.8)/1.9,1))}
+ for(const a of actors){const s=a.userData.student;if(s&&!s.human&&a.userData.tentacles)a.userData.tentacles.scale.setScalar(Math.min(Math.max((t-3.1)/1.8,0),1))}
+ if(t>6.8){const fade=Math.max(0,1-(t-6.8)/3.1);for(const a of actors){const s=a.userData.student;if(s&&s.human)a.scale.set(.62*fade,.66*fade,.62*fade)}}
+ const flash=t>6.4&&Math.sin(t*15)>0.62?'.42':'0';document.getElementById('cineFlash').style.opacity=flash;
+ if(t<2.5)document.getElementById('cineCaption').textContent='CAM 04 · AGENT ENTERING CELL';
+ else if(t<5.5)document.getElementById('cineCaption').textContent='SIGNAL DISTORTION · SUBJECTS MOVING';
+ else if(t<9)document.getElementById('cineCaption').textContent='FRAME LOSS · MOTION DETECTED';
+ else document.getElementById('cineCaption').textContent='NO FURTHER ATTENDANCE RECORDED';
+ if(t>10.3&&!cinematicFinished){cinematicFinished=true;document.getElementById('hud').style.display='none';document.getElementById('cineCaption').style.display='none';document.getElementById('cineFlash').style.opacity='0';document.getElementById('endText').textContent='The agent walked into the cell. The camera caught the shape under the jacket, then the tape broke into snow. By morning, the campus was empty. The attendance sheet was full.';document.getElementById('end').style.display='flex'}
+}
+function finish(){startCinematic()}
 document.getElementById('soundToggle').addEventListener('click',startSound);
+function toggleMonitor(){if(!started||dialogOpen||cinematic)return;monitorMode=!monitorMode;lookDrag=false;for(const code of Object.keys(keys))keys[code]=false;document.getElementById('monitorFrame').style.display=monitorMode?'block':'none';document.getElementById('prompt').textContent='';if(monitorMode){document.exitPointerLock?.();toast('SUBLEVEL B · Holding room camera is live. Press TAB to return.')}else{requestLookLock();toast('Back in the corridor.')}}
+function createAgent(){const g=new THREE.Group();const jacket=C(0x11171b),skin=C(0x827568),boots=C(0x111315);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.36,.78,5,10),jacket);body.position.y=1.12;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),skin);head.position.y=1.83;g.add(head);const coat=new THREE.Mesh(new THREE.BoxGeometry(.52,.1,.12),C(0x29353b));coat.position.set(0,1.32,.3);g.add(coat);for(const side of [-1,1]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.66,4,8),boots);leg.position.set(side*.17,.48,0);g.add(leg);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.1,.58,4,8),jacket);arm.position.set(side*.4,1.04,0);g.add(arm)}const badge=makeTextBadge('TF IA');badge.position.set(-.2,1.35,.3);g.add(badge);g.visible=false;scene.add(g);return g}
+const agent=createAgent();
+function makeTentacles(root){const rig=new THREE.Group();rig.position.set(0,1.3,-.2);root.add(rig);const dark=C(0x171115,.45,.1),vein=C(0x603333,.5,.05);for(let i=0;i<6;i++){const side=i%2?1:-1,level=Math.floor(i/2),curve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(side*.28,.12+level*.1,-.65),new THREE.Vector3(side*.55,.3-level*.14,-1.45),new THREE.Vector3(side*.24,-.2-level*.12,-2.25)]);const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,18,.055+(i%3)*.012,8,false),dark);tube.castShadow=true;rig.add(tube);const tip=new THREE.Mesh(new THREE.SphereGeometry(.085,8,8),vein);tip.position.copy(curve.getPoint(1));rig.add(tip)}rig.scale.setScalar(.001);root.userData.tentacles=rig;return rig}
 document.getElementById('start').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('hud').style.display='block';started=true;startSound();renderer.domElement.setAttribute('tabindex','0');renderer.domElement.focus();requestLookLock();updateHud();toast('The night shift is still inside. Press E when someone is in the crosshair.')});
 const keys={};let yaw=0,pitch=0,dt=0,last=performance.now();
 let lookDrag=false;
@@ -302,7 +324,7 @@ document.addEventListener('mousemove',turnView);
 renderer.domElement.addEventListener('pointerdown',e=>{if(started&&!dialogOpen&&!locked){lookDrag=true;try{renderer.domElement.setPointerCapture(e.pointerId)}catch(_){}}});
 document.addEventListener('pointerup',()=>lookDrag=false);
 renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen&&!locked)requestLookLock()});
-document.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==='KeyE'&&near&&!dialogOpen){if(near.student)openInterview(near.student);else if(near.action)near.action()}if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)renderer.domElement.requestPointerLock?.()}});
+document.addEventListener('keydown',e=>{if(e.code==='Tab'){e.preventDefault();if(monitorMode)toggleMonitor();else if(started&&!dialogOpen&&!cinematic)toggleMonitor();return}if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code))e.preventDefault();if(monitorMode||cinematic)return;keys[e.code]=true;if(e.code==='KeyE'&&near&&!dialogOpen){if(near.student)openInterview(near.student);else if(near.action)near.action()}if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)requestLookLock()}});
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.querySelectorAll('#touchPad [data-move]').forEach(button=>{const code=button.dataset.move;button.addEventListener('pointerdown',e=>{e.preventDefault();keys[code]=true;button.setPointerCapture(e.pointerId)});for(const name of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(name,()=>keys[code]=false)});
 function collides(x,z){const r=.34;return colliders.some(c=>x+r>c.minX&&x-r<c.maxX&&z+r>c.minZ&&z-r<c.maxZ)}
