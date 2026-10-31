@@ -190,7 +190,7 @@ addBox(.08,2.6,7.8,C(0x263640,.25,.25),20.15,2.25,-40);
 addBox(2.1,.12,.85,wood,22.5,.76,-40,true);
 for(const sx of [-.92,.92])for(const sz of [-.34,.34])addBox(.08,.72,.08,metal,22.5+sx,.36,-40+sz,true);
 addBox(.9,.48,.08,C(0x172932,.45,.3),22.45,1.15,-40.08);
-addBox(.08,.8,.08,metal,22.45,.42,-40.08);
+addBox(.08,.9,.08,metal,22.45,.46,-40.08);
 addBox(.52,.04,.6,cream,24.4,3.95,-37.2);
 addBox(.32,.18,.38,black,24.4,3.84,-37.2);
 const monitorCamera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,100);monitorCamera.position.set(21.2,2.65,-39.7);monitorCamera.lookAt(29,1.25,-40);
@@ -254,7 +254,8 @@ const students=[
 for(let i=0;i<students.length;i++)actors.push(createPerson(students[i],i));
 const roomProps=new Map(rooms.map(r=>[r.kind,r]));
 // More background students create a busy campus feel; each has a distinct idle pose and is not an interview target.
-function silhouette(x,z,shirtColor,pose=0){const g=new THREE.Group();g.position.set(x,0,z);const t=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.65,4,8),C(shirtColor));t.position.y=1.08;g.add(t);const h=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),C(0x8c7668));h.position.y=1.8;g.add(h);for(const sx of [-.16,.16]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.095,.12,.76,8),C(0x24292b));l.position.set(sx,.4,0);g.add(l)}if(pose){t.rotation.z=.12;h.rotation.x=.18}scene.add(g)}
+const backgroundActors=[];
+function silhouette(x,z,shirtColor,pose=0){const g=new THREE.Group();g.position.set(x,0,z);const t=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.65,4,8),C(shirtColor));t.position.y=1.08;g.add(t);const h=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),C(0x8c7668));h.position.y=1.8;g.add(h);for(const sx of [-.16,.16]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.095,.12,.76,8),C(0x24292b));l.position.set(sx,.4,0);g.add(l)}if(pose){t.rotation.z=.12;h.rotation.x=.18}scene.add(g);backgroundActors.push(g)}
 silhouette(-2.1,0,0x283741,1);silhouette(2.2,-8,0x4b3d36);silhouette(-2.5,-19,0x334c55,1);silhouette(2.4,-31,0x4c4537);silhouette(-2,-38,0x3a4443,1);
 // Persistent audio: original Web Audio drone, filtered noise, and occasional metal creak; no external recording.
 let audioCtx=null,musicGain=null,audioEnabled=false,noiseNode=null,creakTimer=null;
@@ -271,7 +272,7 @@ function startSound(){
  audioCtx.resume();audioEnabled=!audioEnabled;musicGain.gain.setTargetAtTime(audioEnabled?.32:0,audioCtx.currentTime,.7);document.getElementById('soundToggle').textContent='SOUND: '+(audioEnabled?'ON':'OFF');
 }
 function toast(text){const el=document.getElementById('toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3000)}
-const questionsAsked=new Map(),interviewed=new Set();let contained=0,skinwalkersContained=0,started=false,dialogOpen=false,locked=false,monitorMode=false,cinematic=false,current=null,near=null,cinematicStart=0,cinematicFinished=false;
+const questionsAsked=new Map(),interviewed=new Set();let contained=0,skinwalkersContained=0,started=false,dialogOpen=false,locked=false,monitorMode=false,cinematic=false,current=null,near=null,cinematicStart=0,cinematicFinished=false,cinematicVictims=[];
 function updateHud(){document.getElementById('interviewCount').textContent=interviewed.size+' / 8';document.getElementById('containedCount').textContent=contained;document.getElementById('skinwalkerCount').textContent=skinwalkersContained+' / 2';document.getElementById('objective').textContent=cinematic?'The tape is still recording.':skinwalkersContained?'The holding room is secure. Check the feed or continue your interviews.':'Interview the students. Watch the small details.'}
 function openInterview(s){current=s;dialogOpen=true;document.exitPointerLock?.();document.getElementById('dialogue').style.display='flex';document.getElementById('person').textContent=s.name;document.getElementById('role').textContent=s.role;document.getElementById('dtext').textContent=s.opening;const box=document.getElementById('choices');box.innerHTML='';
  s.topics.forEach((topic,i)=>{const b=document.createElement('button');b.textContent='Ask about '+topic.toLowerCase();b.onclick=()=>ask(s,i);box.appendChild(b)});
@@ -295,13 +296,15 @@ function accuse(s){const seen=questionsAsked.get(s.name);if(!seen||seen.size<2){
 function sting(){if(!audioCtx||!musicGain)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(160,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(42,audioCtx.currentTime+1);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.15,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+1.2);o.connect(g);g.connect(musicGain);o.start();o.stop(audioCtx.currentTime+1.25)}
 function startCinematic(){if(cinematic)return;cinematic=true;monitorMode=false;dialogOpen=false;cinematicStart=performance.now();cinematicFinished=false;document.exitPointerLock?.();document.getElementById('monitorFrame').style.display='none';document.getElementById('hud').style.display='block';document.getElementById('cineCaption').style.display='block';document.getElementById('cineCaption').textContent='CAM 04 · SECURITY TAPE 00:41';holdingGate.rotation.y=0;
  agent.visible=true;agent.position.set(22.2,0,-40);agent.rotation.y=Math.PI/2;
- let victimIndex=0;for(const a of actors){const s=a.userData.student;if(!s)continue;if(!s.human)makeTentacles(a);else{const k=victimIndex++;a.position.set(21.3+(k%3)*1.15,0,-36.5-Math.floor(k/3)*1.45);a.rotation.y=-Math.PI/2;a.scale.set(.62,.66,.62)}}
+ const victims=[];let victimIndex=0;for(const a of actors){const s=a.userData.student;if(!s)continue;if(!s.human)makeTentacles(a);else{const k=victimIndex++;a.position.set(21.3+(k%3)*1.15,0,-36.5-Math.floor(k/3)*1.45);a.rotation.y=-Math.PI/2;a.scale.set(.62,.66,.62);victims.push({root:a,scale:[.62,.66,.62]})}}
+ for(let k=0;k<backgroundActors.length;k++){const a=backgroundActors[k];a.position.set(21.2+(k%3)*1.05,0,-39.6-Math.floor(k/3)*1.5);victims.push({root:a,scale:[1,1,1]})}
+ cinematicVictims=victims;
  sting()
 }
 function updateCinematic(now){const t=(now-cinematicStart)/1000;agent.position.x=22.2+Math.min(t/4.2,1)*5.8;holdingGate.rotation.y=t<.7?0:Math.min((t-.7)*.75,1.45);
  if(t>3.8){if(!agent.userData.tentacles)makeTentacles(agent);agent.userData.tentacles.scale.setScalar(Math.min((t-3.8)/1.9,1))}
  for(const a of actors){const s=a.userData.student;if(s&&!s.human&&a.userData.tentacles)a.userData.tentacles.scale.setScalar(Math.min(Math.max((t-3.1)/1.8,0),1))}
- if(t>6.8){const fade=Math.max(0,1-(t-6.8)/3.1);for(const a of actors){const s=a.userData.student;if(s&&s.human)a.scale.set(.62*fade,.66*fade,.62*fade)}}
+ if(t>6.8){const fade=Math.max(0,1-(t-6.8)/3.1);for(const v of cinematicVictims)v.root.scale.set(v.scale[0]*fade,v.scale[1]*fade,v.scale[2]*fade)}
  const flash=t>6.4&&Math.sin(t*15)>0.62?'.42':'0';document.getElementById('cineFlash').style.opacity=flash;
  if(t<2.5)document.getElementById('cineCaption').textContent='CAM 04 · AGENT ENTERING CELL';
  else if(t<5.5)document.getElementById('cineCaption').textContent='SIGNAL DISTORTION · SUBJECTS MOVING';
