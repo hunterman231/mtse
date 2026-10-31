@@ -26,6 +26,14 @@
 #touchPad{display:none;pointer-events:auto;position:absolute;right:12px;bottom:57px;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,42px);gap:4px}
 #touchPad button{background:#080c10d9;border:1px solid #c9d5bb77;color:#e4e0d5;font:17px 'DM Mono',monospace;touch-action:none}
 #touchPad button:active{background:#41515a}
+#monitorFrame{display:none;position:fixed;inset:18px;z-index:4;pointer-events:none;border:2px solid #b94f49aa;box-shadow:inset 0 0 50px #000b,0 0 35px #000;background:radial-gradient(ellipse at center,transparent 45%,#03050677)}
+.monitorTag,.monitorCorner{position:absolute;font:10px 'DM Mono',monospace;letter-spacing:.16em;color:#dbddd1;text-shadow:0 1px 4px #000}
+.monitorTag{left:15px;top:13px}.monitorTag i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#c84d46;margin-right:7px;box-shadow:0 0 8px #ef5148;animation:recblink 1s infinite}
+.monitorTag b{margin-left:15px;font-weight:400;color:#c8ceb9}.monitorCorner.bottomLeft{left:15px;bottom:13px}.monitorCorner.bottomRight{right:15px;bottom:13px}
+.monitorScan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#0003 4px);opacity:.28}
+@keyframes recblink{50%{opacity:.25}}
+#cineFlash{position:fixed;inset:0;z-index:5;pointer-events:none;background:#9e1313;opacity:0;transition:opacity .18s}
+#cineCaption{display:none;position:fixed;z-index:5;left:50%;bottom:9%;transform:translateX(-50%);padding:10px 14px;background:#090d11c9;border-top:1px solid #c9d5bb55;color:#e4e0d5;font:10px 'DM Mono',monospace;letter-spacing:.15em}
 .crosshair{position:absolute;left:50%;top:50%;width:8px;height:8px;border:1px solid #d5dece;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px #d5dece66}
 #prompt{position:absolute;left:50%;top:calc(50% + 25px);transform:translateX(-50%);font:10px 'DM Mono',monospace;text-shadow:0 1px 6px #000;white-space:nowrap;color:#ede8da}
 .controls{position:absolute;bottom:21px;left:23px;font:9px 'DM Mono',monospace;line-height:1.8;color:#c3c1b8;text-shadow:0 2px 6px #000}
@@ -69,12 +77,14 @@ hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
 <div id="hud">
 <div class="top"><div><div class="kicker">TF · Internal Affairs</div><div class="objective" id="objective">Interview the students. Watch the small details.</div></div><div class="status">INTERVIEWS <b id="interviewCount">0 / 8</b><br>CONTAINED <b class="danger" id="containedCount">0 / 2</b></div></div>
 <div class="crosshair"></div><div id="prompt"></div>
-<div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / INTERACT · SHIFT — WALK FASTER<br>Hold and drag if mouse look is not captured.</div>
+<div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / DETAIN · TAB — SECURITY CAMERA<br>SHIFT — WALK FASTER · HOLD + DRAG TO LOOK</div>
 <div id="touchPad" aria-label="Movement controls"><span></span><button data-move="KeyW" aria-label="Move forward">↑</button><span></span><button data-move="KeyA" aria-label="Move left">←</button><button data-move="KeyS" aria-label="Move backward">↓</button><button data-move="KeyD" aria-label="Move right">→</button></div>
 <button id="soundToggle">SOUND: OFF</button><div class="toast" id="toast"></div>
 </div>
 <div id="dialogue"><div class="dcard"><div class="dhead"><div class="person" id="person"></div><div class="role" id="role"></div></div><div class="dtext" id="dtext"></div><div class="choices" id="choices"></div><div class="closehint">ESC — end conversation</div></div></div>
-<div class="overlay" id="end"><div class="card"><div class="label">CASE FILE 041 · CLOSED</div><h1>YOU CAN<br>GO HOME.</h1><p class="lede" id="endText"></p><div class="startrow"><button class="btn" onclick="location.reload()">REOPEN CASE</button><span class="tiny">The morning shift says the attendance sheet is still signed.</span></div></div></div>
+<div id="monitorFrame"><div class="monitorTag"><i></i> REC <b>CAM 04 · SUBLEVEL B</b></div><div class="monitorCorner bottomLeft">TF INTERNAL AFFAIRS · LIVE FEED</div><div class="monitorCorner bottomRight">TAB — RETURN TO FIELD</div><div class="monitorScan"></div></div>
+<div id="cineFlash"></div><div id="cineCaption">SECURITY FOOTAGE · 00:41</div>
+<div class="overlay" id="end"><div class="card"><div class="label">CASE FILE 041 · CLOSED</div><h1>NO ONE<br>LEFT TO ASK.</h1><p class="lede" id="endText"></p><div class="startrow"><button class="btn" onclick="location.reload()">REOPEN CASE</button><span class="tiny">Morning attendance: eight signatures. No students were found.</span></div></div></div>
 <script type="module">
 import * as THREE from 'three';
 const host=document.getElementById('game');
@@ -136,32 +146,29 @@ for(const r of rooms){
 // Double-height lobby / stairwell at the end, with an access-control desk and a barred holding cell.
 floor(22,8,0,-41);ceilingSpan(22,8,0,-41);wallZ(-45,-11,11);wallX(-11,-45,-37);wallX(11,-45,-37);
 for(let side of [-1,1]){for(let i=0;i<9;i++){addBox(1.18,.28,.55,wood,side*(2.1+i*.88),.25+i*.22,-42.8-i*.31,true);addBox(.12,3,.12,metal,side*3.1,1.5,-37.2)}}
-for(let y=0;y<3;y++){addBox(2.5,.12,.12,metal,0,y*1.1+.3,-44.1);for(let x of [-1.2,1.2])addBox(.1,3,.1,metal,x,1.5,-44.1)}
-addBox(3,.16,.12,metal,0,3,-44.1);
-for(let x=-10;x<=10;x+=2){addBox(.12,3.6,.12,metal,x,1.8,-44.8);addBox(.1,.12,2,metal,x,3.55,-43.8)}
+// The campus stair landing opens onto a blank service wall; the real detention room is off-map.
 // Room-specific furniture, sports gear, notice boards and tired campus details.
-function poster(x,z,title,sub='TF · 1925'){const c=document.createElement('canvas');c.width=384;c.height=512;const q=c.getContext('2d');q.fillStyle='#e4e0d5';q.fillRect(0,0,384,512);q.fillStyle='#2b465a';q.fillRect(0,0,384,114);q.fillStyle='#f4f1e8';q.font='bold 36px Arial';q.fillText(title,20,68);q.fillStyle='#23313a';q.font='bold 21px Arial';q.fillText(sub,21,151);q.strokeStyle='#324857';q.lineWidth=6;q.strokeRect(14,14,356,484);for(let i=0;i<4;i++){q.fillStyle=['#bd4f48','#c3ab6e','#607982','#d4d2c8'][i];q.fillRect(25+i*80,210,58,180)}const tex=new THREE.CanvasTexture(c);const p=new THREE.Mesh(new THREE.PlaneGeometry(1.25,1.65),new THREE.MeshBasicMaterial({map:tex}));p.position.set(x,2.2,z);scene.add(p)}
+function poster(x,z,title,sub='TF · 1925'){const c=document.createElement('canvas');c.width=768;c.height=224;const q=c.getContext('2d');q.fillStyle='#253b49';q.fillRect(0,0,768,224);q.fillStyle='#d7d8cf';q.fillRect(13,13,742,198);q.fillStyle='#304d60';q.fillRect(20,20,728,74);q.fillStyle='#eef0e5';q.font='bold 39px Arial';q.fillText(title,40,70);q.fillStyle='#273640';q.font='24px Arial';q.fillText(sub,42,145);q.strokeStyle='#899496';q.lineWidth=5;q.strokeRect(2,2,764,220);const tex=new THREE.CanvasTexture(c);const p=new THREE.Mesh(new THREE.PlaneGeometry(2.25,.66),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));p.position.set(x,2.65,z);p.rotation.y=x<0?Math.PI/2:-Math.PI/2;scene.add(p);addBox(.1,.16,.12,metal,x,2.65,z,false)}
 poster(-3.82,-7,'HALL OF FAME','100 YEARS OF TF');poster(3.82,-18,'SPORT SCIENCE','MOVE · STUDY · REPEAT');poster(-3.82,-31,'ATTENDANCE','NO EXCEPTIONS');
 for(let z=-5;z>-35;z-=7){
- addBox(2.5,.34,.62,wood,-3.18,.45,z,true);addBox(2.5,.34,.62,wood,3.18,.45,z-2,true);
+ addBox(2.5,.34,.62,wood,-3.18,.17,z,true);addBox(2.5,.34,.62,wood,3.18,.17,z-2,true);
  // radiator and campus window recesses
  addBox(.26,.62,2.4,metal,-3.78,.45,z-1);addBox(.26,.62,2.4,metal,3.78,.45,z+1);
 }
 function lockers(x,z,count=6){for(let i=0;i<count;i++){const zz=z+i*.72;addBox(.62,2.2,.62,i%2?C(0x59656b):C(0x4b5b63),x,1.1,zz,true);addBox(.05,.07,.05,metal,x+.23,1.12,zz-.23);for(let j=0;j<3;j++)addBox(.03,.025,.16,black,x+.31,1.55-j*.12,zz-.02)}}
 lockers(-12.8,-4,7);
-for(let i=0;i<3;i++){addBox(1.3,.25,2.2,blue,-10+i*2,0.14,-13);addBox(.12,.42,.12,metal,-10.55+i*2,0.55,-13);addBox(.12,.42,.12,metal,-9.45+i*2,0.55,-13)}
+for(let i=0;i<3;i++){const bx=-10+i*2;addBox(1.3,.2,2.2,blue,bx,.82,-13,true);for(const sx of [-.5,.5])for(const sz of [-.85,.85])addBox(.08,.72,.08,metal,bx+sx,.36,-13+sz,true)}
 for(let row=0;row<3;row++)for(let col=0;col<4;col++){const x=5.4+col*1.8,z=-11.3+row*2.4;addBox(1.25,.32,.56,wood,x,.62,z,true);addBox(.07,.8,.07,metal,x-.48,.4,z);addBox(.07,.8,.07,metal,x+.48,.4,z)}
 // lecture room: scuffed tables, chalkboard, stack of plastic chairs
 addBox(7,.05,.04,black,9,2.25,-17.82);poster(13.82,-13,'SPORTS','SCIENCE');
 for(let row=0;row<3;row++)for(let col=0;col<3;col++){const x=5.3+col*2.55,z=-16.1+row*2.2;addBox(1.8,.12,.78,wood,x,.88,z,true);addBox(.08,.75,.08,metal,x-.72,.38,z);addBox(.08,.75,.08,metal,x+.72,.38,z)}
 // physio lab: parallel bars, padded bench, anatomical chart
 for(let x of [6,10,12]){addBox(.09,1.2,6,metal,x,.62,-12.7,true);addBox(.1,.1,6,metal,x,1.22,-12.7)}
-addBox(2.8,.42,1.1,blue,8.5,.44,-16,true);addBox(2.2,.05,.1,cream,8.5,.67,-16);
-poster(13.82,-14,'MOBILITY','ASSESSMENT ROOM');
+addBox(2.8,.2,1.1,blue,8.5,.82,-16,true);addBox(2.2,.05,.1,cream,8.5,.95,-16);for(const sx of [-1.15,1.15])for(const sz of [-.36,.36])addBox(.09,.72,.09,metal,8.5+sx,.36,-16+sz,true);
+poster(13.82,-16.2,'MOBILITY','ASSESSMENT ROOM');
 // archive shelving and dusty storage boxes
-for(let x of [-12,-9,-6]){for(let y of [.55,1.4,2.25])addBox(2,.08,.5,wood,x,y,-25,true);for(let i=0;i<4;i++)addBox(.36,.55,.42,i%2?cream:wood,x-.72+i*.46,yFor(.55),-25)}
-function yFor(y){return y+.34}
-for(let x of [5.7,8.5,11.3]){addBox(.26,2.8,7,wood,x,1.4,-25,true);for(let y=.55;y<2.8;y+=.72)addBox(.28,.08,7,metal,x,y,-25)}
+for(let x of [-12,-9,-6]){for(let y of [.04,.78,1.52,2.26])addBox(2,.08,.5,wood,x,y,-25,true);for(const sx of [-.94,.94])addBox(.08,2.35,.5,metal,x+sx,1.2,-25,true);for(let level=0;level<3;level++)for(let i=0;i<4;i++)addBox(.36,.62,.42,i%2?cream:wood,x-.72+i*.46,.39+level*.74,-25)}
+for(let x of [5.7,8.5,11.3]){for(const sx of [-1.05,1.05])addBox(.08,2.8,.78,wood,x+sx,1.4,-25,true);for(let y=.04;y<2.8;y+=.68)addBox(2.2,.08,.78,metal,x,y,-25,true)}
 // sports hall details: court lines, basketball hoops and a folded gymnastics mat
 for(let x of [5,13]){addBox(.08,.06,7,cream,x,.02,-25);addBox(.1,3.2,.1,metal,x,1.6,-21.6);addBox(1.25,.08,.1,metal,x,3.2,-21.6);addBox(.06,1,.06,cream,x,2.65,-21.6)}
 for(let i=0;i<4;i++)addBox(1.2,.38,.9,i%2?blue:darkBlue,5.3+i*1.35,.2,-28.2,true);
