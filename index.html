@@ -79,7 +79,7 @@ hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
 import * as THREE from 'three';
 const host=document.getElementById('game');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x111a20);scene.fog=new THREE.FogExp2(0x111a20,.019);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,130);camera.position.set(0,1.68,2.7);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,130);camera.position.set(0,1.68,1.55);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.appendChild(renderer.domElement);
 const hemi=new THREE.HemisphereLight(0x9eabb5,0x17191b,1.15);scene.add(hemi);
 const lamps=[],colliders=[],actors=[];
