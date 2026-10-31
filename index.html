@@ -110,7 +110,7 @@ function makeStudent(s,i){
  // A student lanyard and messenger bag make silhouettes legible from across the hall.
  const strap=new THREE.Mesh(new THREE.TorusGeometry(.25,.025,5,16,Math.PI),mat(0xd6bd6c));strap.position.set(0,1.32,.18);strap.rotation.z=Math.PI;g.add(strap);
  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.43,16),new THREE.MeshBasicMaterial({color:0x050908,transparent:true,opacity:.45}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.015;g.add(shadow);
- if(!s.human){const eyeMat=new THREE.MeshBasicMaterial({color:0xff5147});for(const x of [-.09,.09]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),eyeMat);eye.position.set(x,1.77,.23);g.add(eye)}}
+
  scene.add(g);return g
 }
 let actors=students.map(makeStudent);
@@ -120,7 +120,7 @@ function toast(t){const e=document.getElementById('toast');e.textContent=t;e.cla
 function updateHud(){document.getElementById('casecount').textContent=questioned.size+' / 5';document.getElementById('detained').textContent=detained;document.getElementById('objective').textContent=detained?'A helyszín majdnem tiszta. Még '+(5-questioned.size)+' hallgatóval beszélj.':'Beszélj mindenkivel. A részletek számítanak.'}
 function openDialog(s){
  current=s;dialogOpen=true;document.exitPointerLock?.();document.getElementById('dialogue').style.display='flex';
- document.getElementById('person').textContent=s.name+' · '+s.role;document.getElementById('personTag').textContent=s.human?'HALLGATÓ':'ELLENŐRZENDŐ';
+ document.getElementById('person').textContent=s.name+' · '+s.role;document.getElementById('personTag').textContent='HALLGATÓ';
  document.getElementById('dialogtext').textContent=s.lines[0];
  const choices=document.getElementById('choices');choices.innerHTML='';
  const prompts=['Mit csináltál ma este?','Mi a legfurább dolog a campuson?','Mondj valamit, amit csak egy TF-es tud.'];
