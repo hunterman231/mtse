@@ -48,7 +48,7 @@ button:hover{transform:translateY(-2px);background:#e7ff8f}.startrow{display:fle
 <body>
 <div id="game"></div>
 <div class="overlay" id="intro"><div class="card">
-<div class="kicker">Belső ügyosztály · Aktív ügy #TF-041</div>
+<div class="kicker">Magyar Testnevelési és Sporttudományi Egyetem · Aktív ügy #TF-041</div>
 <h1>Éjszakai<br>jelenlét</h1>
 <p class="lede">A TF-en ma este valaki nagyon komolyan veszi a kötelező jelenlétet. A probléma csak az, hogy néhány hallgató <em>nem egészen hallgató</em>.</p>
 <div class="rule"></div>
@@ -148,7 +148,7 @@ function accuseStudent(s){
 function finish(ok){document.getElementById('hud').style.display='none';const e=document.getElementById('end');e.style.display='flex';document.exitPointerLock?.();document.getElementById('endtitle').textContent=ok?'A jelenlét igazolva.':'Ügy lezárva.';
 document.getElementById('endtext').textContent=ok?'Az alakváltó a zárkában van, a campus viszonylag biztonságos, és valaki eltüntette az összes kakaós csigát. A jelentés szerint ez „járulékos veszteség”.':'A történtek után a portás hazakísérte a hallgatót. Holnap újra próbálkozol.'}
 document.getElementById('restart').onclick=()=>location.reload();
-function move(){if(!started||dialogOpen)return;const speed=3.4*(keys.Shift?1.5:1);const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).negate();if(keys.KeyW||keys.ArrowUp)camera.position.addScaledVector(f,speed*dt);if(keys.KeyS||keys.ArrowDown)camera.position.addScaledVector(f,-speed*dt);if(keys.KeyA||keys.ArrowLeft)camera.position.addScaledVector(r,-speed*dt);if(keys.KeyD||keys.ArrowRight)camera.position.addScaledVector(r,speed*dt);camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10.8,10.8);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-17.2,7.8);camera.position.y=1.68}
+function move(){if(!started||dialogOpen)return;const speed=3.4*(keys.Shift?1.5:1);const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));if(keys.KeyW||keys.ArrowUp)camera.position.addScaledVector(f,speed*dt);if(keys.KeyS||keys.ArrowDown)camera.position.addScaledVector(f,-speed*dt);if(keys.KeyA||keys.ArrowLeft)camera.position.addScaledVector(r,-speed*dt);if(keys.KeyD||keys.ArrowRight)camera.position.addScaledVector(r,speed*dt);camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10.8,10.8);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-17.2,7.8);camera.position.y=1.68}
 let yaw=0,pitch=0,dt=0,last=performance.now();
 renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen)renderer.domElement.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement});
