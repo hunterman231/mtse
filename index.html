@@ -23,6 +23,9 @@
 .status{background:#080c10b8;border:1px solid #d5ded333;padding:10px 13px;font:10px 'DM Mono',monospace;line-height:1.8;letter-spacing:.08em}
 .status b{color:#e8e0ce;font-weight:500}.status .danger{color:#d77b73}
 #soundToggle{pointer-events:auto;position:absolute;right:23px;bottom:22px;background:#080c10c9;border:1px solid #c9d5bb55;color:var(--paper);padding:10px 13px;font:10px 'DM Mono',monospace;letter-spacing:.1em;cursor:pointer}
+#touchPad{display:none;pointer-events:auto;position:absolute;right:12px;bottom:57px;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,42px);gap:4px}
+#touchPad button{background:#080c10d9;border:1px solid #c9d5bb77;color:#e4e0d5;font:17px 'DM Mono',monospace;touch-action:none}
+#touchPad button:active{background:#41515a}
 .crosshair{position:absolute;left:50%;top:50%;width:8px;height:8px;border:1px solid #d5dece;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px #d5dece66}
 #prompt{position:absolute;left:50%;top:calc(50% + 25px);transform:translateX(-50%);font:10px 'DM Mono',monospace;text-shadow:0 1px 6px #000;white-space:nowrap;color:#ede8da}
 .controls{position:absolute;bottom:21px;left:23px;font:9px 'DM Mono',monospace;line-height:1.8;color:#c3c1b8;text-shadow:0 2px 6px #000}
@@ -51,7 +54,7 @@ hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
 .choices button:disabled{opacity:.45;cursor:not-allowed}
 .closehint{font:9px 'DM Mono',monospace;color:#8b908a;margin-top:13px}
 #end{display:none;z-index:6}
-@media(max-width:560px){.card{padding:26px 22px}.brief{grid-template-columns:1fr}.top{top:12px;left:12px;right:12px}.status{font-size:9px;padding:7px 9px}.objective{font-size:12px}.controls{left:12px;bottom:10px;font-size:8px}#soundToggle{right:12px;bottom:12px}.dcard{padding:16px}.choices{display:grid;grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.card{padding:26px 22px}.brief{grid-template-columns:1fr}.top{top:12px;left:12px;right:12px}.status{font-size:9px;padding:7px 9px}.objective{font-size:12px}.controls{left:12px;bottom:10px;font-size:8px}#soundToggle{right:12px;bottom:12px}#touchPad{display:grid}.dcard{padding:16px}.choices{display:grid;grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -66,7 +69,8 @@ hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
 <div id="hud">
 <div class="top"><div><div class="kicker">TF · Internal Affairs</div><div class="objective" id="objective">Interview the students. Watch the small details.</div></div><div class="status">INTERVIEWS <b id="interviewCount">0 / 8</b><br>CONTAINED <b class="danger" id="containedCount">0 / 2</b></div></div>
 <div class="crosshair"></div><div id="prompt"></div>
-<div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / INTERACT &nbsp; · &nbsp; SHIFT — WALK FASTER</div>
+<div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / INTERACT · SHIFT — WALK FASTER<br>Hold and drag if mouse look is not captured.</div>
+<div id="touchPad" aria-label="Movement controls"><span></span><button data-move="KeyW" aria-label="Move forward">↑</button><span></span><button data-move="KeyA" aria-label="Move left">←</button><button data-move="KeyS" aria-label="Move backward">↓</button><button data-move="KeyD" aria-label="Move right">→</button></div>
 <button id="soundToggle">SOUND: OFF</button><div class="toast" id="toast"></div>
 </div>
 <div id="dialogue"><div class="dcard"><div class="dhead"><div class="person" id="person"></div><div class="role" id="role"></div></div><div class="dtext" id="dtext"></div><div class="choices" id="choices"></div><div class="closehint">ESC — end conversation</div></div></div>
@@ -262,13 +266,19 @@ function accuse(s){const seen=questionsAsked.get(s.name);if(!seen||seen.size<2){
 function sting(){if(!audioCtx||!musicGain)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(160,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(42,audioCtx.currentTime+1);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.15,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+1.2);o.connect(g);g.connect(musicGain);o.start();o.stop(audioCtx.currentTime+1.25)}
 function finish(){document.getElementById('hud').style.display='none';document.getElementById('end').style.display='flex';document.exitPointerLock?.();document.getElementById('endText').textContent='Both visitors are behind the holding-room bars. At dawn, the attendance sheet shows eight signatures. Your field report says there were only six students.'}
 document.getElementById('soundToggle').addEventListener('click',startSound);
-document.getElementById('start').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('hud').style.display='block';started=true;startSound();renderer.domElement.requestPointerLock?.();updateHud();toast('The night shift is still inside. Press E when someone is in the crosshair.')});
+document.getElementById('start').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('hud').style.display='block';started=true;startSound();renderer.domElement.setAttribute('tabindex','0');renderer.domElement.focus();requestLookLock();updateHud();toast('The night shift is still inside. Press E when someone is in the crosshair.')});
 const keys={};let yaw=0,pitch=0,dt=0,last=performance.now();
+let lookDrag=false;
+function requestLookLock(){try{const result=renderer.domElement.requestPointerLock?.();if(result&&result.catch)result.catch(()=>toast('Mouse capture is unavailable. Hold the mouse button and drag to look.'))}catch(e){toast('Mouse capture is unavailable. Hold the mouse button and drag to look.')}}
+function turnView(e){if(dialogOpen||!started||(!locked&&!lookDrag))return;yaw-=e.movementX*.0022;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.15,1.15);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)}
 document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
-document.addEventListener('mousemove',e=>{if(!dialogOpen&&(locked||started)){if(locked||document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.15,1.15);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)}}});
-renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen&&!locked)renderer.domElement.requestPointerLock?.()});
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&near&&!dialogOpen){if(near.student)openInterview(near.student);else if(near.action)near.action()}if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)renderer.domElement.requestPointerLock?.()}});
+document.addEventListener('mousemove',turnView);
+renderer.domElement.addEventListener('pointerdown',e=>{if(started&&!dialogOpen&&!locked){lookDrag=true;try{renderer.domElement.setPointerCapture(e.pointerId)}catch(_){}}});
+document.addEventListener('pointerup',()=>lookDrag=false);
+renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen&&!locked)requestLookLock()});
+document.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code))e.preventDefault();keys[e.code]=true;if(e.code==='KeyE'&&near&&!dialogOpen){if(near.student)openInterview(near.student);else if(near.action)near.action()}if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)renderer.domElement.requestPointerLock?.()}});
 document.addEventListener('keyup',e=>keys[e.code]=false);
+document.querySelectorAll('#touchPad [data-move]').forEach(button=>{const code=button.dataset.move;button.addEventListener('pointerdown',e=>{e.preventDefault();keys[code]=true;button.setPointerCapture(e.pointerId)});for(const name of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(name,()=>keys[code]=false)});
 function collides(x,z){const r=.34;return colliders.some(c=>x+r>c.minX&&x-r<c.maxX&&z+r>c.minZ&&z-r<c.maxZ)}
 function move(){if(!started||dialogOpen)return;const speed=2.8*(keys.ShiftLeft||keys.ShiftRight?1.45:1),f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));let nx=camera.position.x,nz=camera.position.z;
  if(keys.KeyW||keys.ArrowUp){nx+=f.x*speed*dt;nz+=f.z*speed*dt}if(keys.KeyS||keys.ArrowDown){nx-=f.x*speed*dt;nz-=f.z*speed*dt}if(keys.KeyA||keys.ArrowLeft){nx-=r.x*speed*dt;nz-=r.z*speed*dt}if(keys.KeyD||keys.ArrowRight){nx+=r.x*speed*dt;nz+=r.z*speed*dt}
