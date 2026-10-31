@@ -1,169 +1,288 @@
 <!doctype html>
-<html lang="hu">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Éjszakai jelenlét – TF</title>
-<meta name="description" content="Egy humoros, nyomasztó első személyű nyomozós játék a Magyar Testnevelési és Sporttudományi Egyetemen.">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#090d12">
+<title>After Hours at TF — A Campus Case File</title>
+<meta name="description" content="A first-person analog horror mystery at the Hungarian University of Sports Science.">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js"}}</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root{--ink:#e9ecdf;--muted:#a3ad9d;--acid:#d5f36a;--red:#ff6a5f;--panel:rgba(12,20,18,.94)}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111916;color:var(--ink);font-family:Manrope,Arial,sans-serif}canvas{display:block}
-#game{position:fixed;inset:0}#hud{position:fixed;inset:0;pointer-events:none;display:none}
-.topbar{position:absolute;top:22px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:flex-start}
-.brand{font:500 11px 'DM Mono',monospace;letter-spacing:.19em;text-transform:uppercase;color:var(--acid)}
-.objective{margin-top:10px;font-size:14px;font-weight:600;text-shadow:0 2px 8px #000}
-.status{background:rgba(8,15,13,.76);border:1px solid rgba(213,243,106,.25);padding:11px 15px;font:11px 'DM Mono',monospace;letter-spacing:.05em}
-.status b{color:var(--acid);font-weight:500}.case{color:#ff968d!important}
-.crosshair{position:absolute;left:50%;top:50%;width:7px;height:7px;border:1px solid var(--acid);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px #d5f36a77}
-.prompt{position:absolute;left:50%;top:calc(50% + 24px);transform:translateX(-50%);font:11px 'DM Mono',monospace;color:#e9ecdf;text-shadow:0 1px 5px #000;white-space:nowrap}
-.help{position:absolute;bottom:22px;left:24px;color:#c1c9bb;font:10px 'DM Mono',monospace;line-height:1.9;text-shadow:0 1px 8px #000}
-.toast{position:absolute;top:24%;left:50%;transform:translate(-50%,-10px);opacity:0;transition:.25s;background:#101a16;border:1px solid #d5f36a66;padding:12px 18px;font-size:13px;max-width:min(500px,90vw);text-align:center}
+:root{--paper:#e4e0d5;--ash:#a6a59d;--acid:#c9d5bb;--red:#b44f49;--bg:#090d12;--panel:rgba(10,14,18,.94)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--paper);font-family:Manrope,Arial,sans-serif}button{font:inherit}
+#game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+#fx{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.54) 100%),linear-gradient(0deg,rgba(138,14,18,.08),transparent 28%);mix-blend-mode:multiply}
+#grain{position:fixed;inset:-30%;z-index:2;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");animation:grain .22s steps(2) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(1%,-1%)}50%{transform:translate(-1%,1%)}75%{transform:translate(1%,1%)}100%{transform:translate(-1%,-1%)}}
+#hud{position:fixed;inset:0;z-index:3;pointer-events:none;display:none}
+.top{position:absolute;top:20px;left:23px;right:23px;display:flex;justify-content:space-between;align-items:flex-start}
+.kicker,.mono{font:10px 'DM Mono',monospace;letter-spacing:.16em;text-transform:uppercase}
+.kicker{color:#d3d7c8;text-shadow:0 2px 6px #000}
+.objective{font-size:14px;font-weight:600;margin-top:9px;text-shadow:0 2px 8px #000}
+.status{background:#080c10b8;border:1px solid #d5ded333;padding:10px 13px;font:10px 'DM Mono',monospace;line-height:1.8;letter-spacing:.08em}
+.status b{color:#e8e0ce;font-weight:500}.status .danger{color:#d77b73}
+#soundToggle{pointer-events:auto;position:absolute;right:23px;bottom:22px;background:#080c10c9;border:1px solid #c9d5bb55;color:var(--paper);padding:10px 13px;font:10px 'DM Mono',monospace;letter-spacing:.1em;cursor:pointer}
+.crosshair{position:absolute;left:50%;top:50%;width:8px;height:8px;border:1px solid #d5dece;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px #d5dece66}
+#prompt{position:absolute;left:50%;top:calc(50% + 25px);transform:translateX(-50%);font:10px 'DM Mono',monospace;text-shadow:0 1px 6px #000;white-space:nowrap;color:#ede8da}
+.controls{position:absolute;bottom:21px;left:23px;font:9px 'DM Mono',monospace;line-height:1.8;color:#c3c1b8;text-shadow:0 2px 6px #000}
+.toast{position:absolute;top:22%;left:50%;max-width:min(540px,90vw);transform:translate(-50%,-8px);opacity:0;transition:.24s;background:#0b1015ed;border:1px solid #c9d5bb5e;padding:12px 16px;font-size:12px;line-height:1.5;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,rgba(39,61,48,.46),rgba(5,10,9,.94) 72%),linear-gradient(0deg,#09100eaa,#09100e22);z-index:4}
-.card{width:min(600px,calc(100vw - 36px));padding:34px 38px;background:rgba(11,19,16,.92);border:1px solid rgba(213,243,106,.23);box-shadow:0 24px 100px #0009}
-.kicker{font:11px 'DM Mono',monospace;letter-spacing:.18em;color:var(--acid);text-transform:uppercase}
-h1{font-size:clamp(38px,8vw,64px);line-height:.96;letter-spacing:-.065em;margin:17px 0 15px;font-weight:800}
-.lede{font-size:15px;color:#c6cec2;line-height:1.65;max-width:480px}
-.rule{height:1px;background:#ffffff1c;margin:22px 0}
-.brief{display:flex;gap:14px;color:#9fa99f;font:11px 'DM Mono',monospace;line-height:1.7}
-button{border:0;background:var(--acid);color:#101710;padding:14px 19px;font:800 12px Manrope,sans-serif;letter-spacing:.04em;cursor:pointer;transition:transform .15s,background .15s}
-button:hover{transform:translateY(-2px);background:#e7ff8f}.startrow{display:flex;align-items:center;gap:15px;margin-top:25px}
-.note{font:10px 'DM Mono',monospace;color:#7f8a7f}
-#dialogue{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;padding:24px;z-index:3;background:linear-gradient(0deg,#060a09df,transparent 70%);pointer-events:auto}
-.dialogcard{width:min(720px,100%);background:var(--panel);border:1px solid #d5f36a55;padding:22px 24px 20px}
-.dialoghead{display:flex;justify-content:space-between;align-items:center}
-.person{font-size:18px;font-weight:800}.tag{font:10px 'DM Mono',monospace;color:var(--acid);text-transform:uppercase;letter-spacing:.1em}
-.dialogtext{color:#cbd2c7;line-height:1.65;font-size:14px;margin:14px 0 18px;min-height:45px}
-.choices{display:flex;flex-wrap:wrap;gap:8px}
-.choices button{background:#24352b;color:#e9ecdf;border:1px solid #53644e;padding:11px 13px;font-size:11px}
-.choices button:hover{background:#334936}
-.choices button.warn{color:#ffd4ce;border-color:#9f534d;background:#382522}
-.closehint{font:10px 'DM Mono',monospace;color:#849086;margin-top:15px}
-#end{display:none;z-index:5}.endtitle{color:var(--acid)}
-@media(max-width:520px){.card{padding:26px 23px}.help{bottom:12px;left:13px;font-size:9px}.topbar{top:13px;left:13px;right:13px}.status{font-size:9px;padding:8px}.objective{font-size:12px}.dialogcard{padding:17px}.choices{display:grid;grid-template-columns:1fr 1fr}.brief{font-size:10px}}
+.overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 35%,#29343b9c,#070a0eee 72%)}
+.card{width:min(650px,calc(100vw - 32px));background:#090d11ed;border:1px solid #c9d5bb42;padding:34px 38px;box-shadow:0 25px 110px #000c}
+.label{font:10px 'DM Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:#c2c9bb}
+h1{font-size:clamp(42px,8vw,70px);line-height:.91;letter-spacing:-.07em;margin:18px 0;font-weight:800}
+.lede{font-size:14px;line-height:1.7;color:#c6c4bc;max-width:540px}
+hr{border:0;border-top:1px solid #ffffff20;margin:22px 0}
+.brief{display:grid;grid-template-columns:1fr 1fr;gap:12px;color:#a6a79f;font:9px 'DM Mono',monospace;line-height:1.7;letter-spacing:.08em}
+.btn{background:#cbd2c1;color:#111416;border:0;padding:13px 18px;font-size:11px;font-weight:800;letter-spacing:.08em;cursor:pointer;transition:filter .15s,transform .15s}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.startrow{display:flex;align-items:center;gap:14px;margin-top:24px}
+.tiny{font:9px 'DM Mono',monospace;color:#8e928b;line-height:1.6}
+#dialogue{position:fixed;inset:0;z-index:4;display:none;align-items:flex-end;justify-content:center;padding:22px;background:linear-gradient(0deg,#050709f0,transparent 78%);pointer-events:auto}
+.dcard{width:min(760px,100%);background:var(--panel);border:1px solid #c9d5bb55;padding:20px 22px 16px;box-shadow:0 15px 70px #000c}
+.dhead{display:flex;justify-content:space-between;align-items:center}
+.person{font-weight:800;font-size:17px}.role{font:9px 'DM Mono',monospace;color:#c0c7b8;letter-spacing:.12em;text-transform:uppercase}
+.dtext{font-size:13px;line-height:1.65;color:#d2d0c8;margin:13px 0 17px;min-height:43px}
+.choices{display:flex;flex-wrap:wrap;gap:7px}
+.choices button{background:#20282d;border:1px solid #59605b;color:#e4e0d5;padding:10px 12px;font:10px Manrope,sans-serif;text-align:left;cursor:pointer}
+.choices button:hover{background:#313a3e}
+.choices button.warn{border-color:#805550;background:#30201f;color:#f0c8be}
+.choices button:disabled{opacity:.45;cursor:not-allowed}
+.closehint{font:9px 'DM Mono',monospace;color:#8b908a;margin-top:13px}
+#end{display:none;z-index:6}
+@media(max-width:560px){.card{padding:26px 22px}.brief{grid-template-columns:1fr}.top{top:12px;left:12px;right:12px}.status{font-size:9px;padding:7px 9px}.objective{font-size:12px}.controls{left:12px;bottom:10px;font-size:8px}#soundToggle{right:12px;bottom:12px}.dcard{padding:16px}.choices{display:grid;grid-template-columns:1fr 1fr}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js"}}</script>
 </head>
 <body>
-<div id="game"></div>
+<div id="game"></div><div id="fx"></div><div id="grain"></div>
 <div class="overlay" id="intro"><div class="card">
-<div class="kicker">Magyar Testnevelési és Sporttudományi Egyetem · Aktív ügy #TF-041</div>
-<h1>Éjszakai<br>jelenlét</h1>
-<p class="lede">A TF-en ma este valaki nagyon komolyan veszi a kötelező jelenlétet. A probléma csak az, hogy néhány hallgató <em>nem egészen hallgató</em>.</p>
-<div class="rule"></div>
-<div class="brief"><span>HELYSZÍN<br>TF CAMPUS · 23:47</span><span>FELADAT<br>KÉRDEZZ · FIGYELJ · AZONOSÍTS</span><span>PROTOKOLL<br>ELKÜLÖNÍTÉS, NEM HŐSKÖDÉS</span></div>
-<div class="startrow"><button id="start">BELÉPÉS AZ ÜGYBE</button><span class="note">Fejhallgató ajánlott. A portásnak ne mondj semmit.</span></div>
+<div class="label">TF INTERNAL AFFAIRS · CASE FILE 041</div>
+<h1>AFTER<br>HOURS</h1>
+<p class="lede">The Hungarian University of Sports Science has a perfect attendance record tonight. Too perfect. Someone is still walking the halls after closing, wearing a familiar face a little too carefully.</p>
+<hr><div class="brief"><div>LOCATION<br>ALKOTÁS STREET CAMPUS · 00:17</div><div>ASSIGNMENT<br>INTERVIEW · OBSERVE · CONTAIN</div><div>THE RULE<br>EVERYONE HAS A STORY</div><div>THE PROBLEM<br>SOME STORIES ARE COPIED</div></div>
+<div class="startrow"><button class="btn" id="start">OPEN THE CASE</button><span class="tiny">Headphones recommended.<br>Use headphones at a comfortable volume.</span></div>
 </div></div>
 <div id="hud">
- <div class="topbar"><div><div class="brand">TF · Belső ügyosztály</div><div class="objective" id="objective">Találd meg, ki nem ember.</div></div><div class="status">ÜGY <b id="casecount">0 / 5</b><br>ELKÜLÖNÍTVE <b id="detained">0</b></div></div>
- <div class="crosshair"></div><div class="prompt" id="prompt"></div>
- <div class="help">W A S D — MOZGÁS &nbsp; · &nbsp; EGÉR — NÉZÉS<br>E — BESZÉLGETÉS &nbsp; · &nbsp; ESC — MENÜ</div>
- <div class="toast" id="toast"></div>
+<div class="top"><div><div class="kicker">TF · Internal Affairs</div><div class="objective" id="objective">Interview the students. Watch the small details.</div></div><div class="status">INTERVIEWS <b id="interviewCount">0 / 8</b><br>CONTAINED <b class="danger" id="containedCount">0 / 2</b></div></div>
+<div class="crosshair"></div><div id="prompt"></div>
+<div class="controls">W A S D — MOVE &nbsp; · &nbsp; MOUSE — LOOK<br>E — TALK / INTERACT &nbsp; · &nbsp; SHIFT — WALK FASTER</div>
+<button id="soundToggle">SOUND: OFF</button><div class="toast" id="toast"></div>
 </div>
-<div id="dialogue"><div class="dialogcard"><div class="dialoghead"><div class="person" id="person"></div><div class="tag" id="personTag">HALLGATÓ</div></div><div class="dialogtext" id="dialogtext"></div><div class="choices" id="choices"></div><div class="closehint">A beszélgetés bezárásához nyomj ESC-et.</div></div></div>
-<div class="overlay" id="end"><div class="card"><div class="kicker">Ügy lezárva · Jelentés beküldve</div><h1 class="endtitle" id="endtitle">Szép munka.</h1><p class="lede" id="endtext"></p><div class="startrow"><button id="restart">ÚJRAKEZDÉS</button><span class="note">A portás szerint ez amúgy is csak egy szeminárium volt.</span></div></div></div>
+<div id="dialogue"><div class="dcard"><div class="dhead"><div class="person" id="person"></div><div class="role" id="role"></div></div><div class="dtext" id="dtext"></div><div class="choices" id="choices"></div><div class="closehint">ESC — end conversation</div></div></div>
+<div class="overlay" id="end"><div class="card"><div class="label">CASE FILE 041 · CLOSED</div><h1>YOU CAN<br>GO HOME.</h1><p class="lede" id="endText"></p><div class="startrow"><button class="btn" onclick="location.reload()">REOPEN CASE</button><span class="tiny">The morning shift says the attendance sheet is still signed.</span></div></div></div>
 <script type="module">
 import * as THREE from 'three';
-const root=document.getElementById('game');
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x18211d);scene.fog=new THREE.FogExp2(0x18211d,.038);
-const camera=new THREE.PerspectiveCamera(74,innerWidth/innerHeight,.1,100);camera.position.set(0,1.68,7);
-const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;root.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xb6d8c6,0x222a25,1.5));
-const lamp=new THREE.PointLight(0xd5f0b0,35,22);lamp.position.set(0,4.2,0);scene.add(lamp);
-const warm=new THREE.PointLight(0xffbd79,24,13);warm.position.set(-7,3,-5);scene.add(warm);
-const mat=(c,rough=.85)=>new THREE.MeshStandardMaterial({color:c,roughness:rough});
-const floorMat=mat(0x424944),wallMat=mat(0x81867d),darkMat=mat(0x202925),wood=mat(0x76543b),green=mat(0x33483a),cream=mat(0xd5cdbb);
-function box(w,h,d,m,x,y,z){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o}
-box(24,.25,30,floorMat,0,-.13,-4);box(24,.25,30,floorMat,0,4.25,-4);
-box(.25,4.5,30,wallMat,-12,2,-4);box(.25,4.5,30,wallMat,12,2,-4);box(24,4.5,.25,wallMat,0,2,-19);
-for(let z=-17;z<8;z+=6){box(3.6,4.45,.22,wallMat,-5.8,2,z);box(3.6,4.45,.22,wallMat,5.8,2,z)}
-// Night windows, corridor, signs, benches and suspiciously overconfident university decor.
-for(let z=-15;z<4;z+=6){for(const x of [-9,9]){box(3.5,2.2,.12,mat(0x263c3b,.28),x,2.55,z);box(3.7,.12,.2,cream,x,1.38,z);box(.1,2.25,.2,cream,x,2.55,z)}}
-for(let z=-15;z<4;z+=6){box(3.2,.35,1,wood,-8,0.25,z+2.3);box(3.2,.35,1,wood,8,.25,z+2.3)}
-// Gym floor lines
-for(let x=-8;x<=8;x+=4)box(.035,.012,20,mat(0x96978b),x,.009,-5);
-for(let z=-15;z<7;z+=4)box(20,.012,.035,mat(0x96978b),0,.012,z);
-function sign(text,x,y,z,rot=0){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#14221b';ctx.fillRect(0,0,512,128);ctx.strokeStyle='#d5f36a';ctx.lineWidth=5;ctx.strokeRect(4,4,504,120);ctx.fillStyle='#edf2df';ctx.font='bold 36px Arial';ctx.fillText(text,22,78);const tex=new THREE.CanvasTexture(c);const s=new THREE.Mesh(new THREE.PlaneGeometry(3.4,.85),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));s.position.set(x,y,z);s.rotation.y=rot;scene.add(s)}
-sign('TF · SPORTKÖZPONT',0,3.35,-18.8);sign('TORNA · USZODA →',-11.8,3.4,2,Math.PI/2);sign('CSAK ENGEDÉLLYEL',11.8,3.4,-9,-Math.PI/2);
-for(let z=-15;z<3;z+=6){const bulb=new THREE.PointLight(0xf0edc4,20,11);bulb.position.set(0,3.8,z);scene.add(bulb);const shade=new THREE.Mesh(new THREE.CylinderGeometry(.24,.36,.16,12),cream);shade.position.set(0,4.02,z);scene.add(shade)}
-// Decorative lockers and a framed, deeply unsettling motivational poster.
-for(let i=0;i<8;i++){const x=-10.8+i*1.1;box(.94,2.4,.75,mat(i%2?0x57665c:0x47594f),x,1.2,7);box(.05,.08,.08,mat(0xd4c58a),x+.31,1.22,6.6)}
-sign('A KITARTÁS: KÖTELEZŐ',0,3,7.5,Math.PI);
-// Student crowd. One visitor has a perfect attendance record and absolutely no reflection.
-const npcMat=[0x527278,0x887050,0x65597b,0x8b6655,0x4e7562,0x826b4c];
-const students=[
-{name:'Lili',role:'elsőéves · rekreáció',pos:[-6,0,-2],human:true,lines:['Én csak a büféautomatát keresem. Ez már a harmadik köröm, és kezdem azt hinni, hogy a gép sportol.'],answers:['A gólyatáborban tanultam meg, hogy a térkép csak javaslat.','A büfés néni szerint a kávé ma is inkább leves.','A nevem Lili. A Neptun-kódomat még az anyukám sem tudja.']},
-{name:'Bence',role:'röplabdás · sportmenedzsment',pos:[5,0,-4],human:true,lines:['Most fejeztem be az edzést. A labda elgurult, én meg futottam utána. A labda nyert.'],answers:['Két szervát rontottam. A harmadiknál már a háló is sajnált.','A büfé kakaós csigája a csapatkapitány.','A teremkulcsot mindig visszaadom. Egyszer még tanúm is volt rá.']},
-{name:'Nóri',role:'gyógytornász hallgató',pos:[-3,0,-11],human:true,lines:['A folyosón nyújtok. Azt mondták, a vizsgaidőszak előtt lazítsak. Azt nem, hogy melyik izmot.'],answers:['A guggolástól már a lépcső is személyes ellenségem.','A 204-esben hagytam a kulacsomat, megint.','Tegnap három órát aludtam. Ezt a teljesítményt nem lehet utánozni.']},
-{name:'Márk',role:'portáshelyettes · levelező',pos:[7,0,-13],human:true,lines:['Éjfél után a campus az enyém. Meg a talált tárgyak doboza. Van benne egy fél pár korcsolya és egy nagyon magabiztos uborka.'],answers:['A beléptetőkártyám kétszer sem működött ma.','A kapunál a mozgásérzékelő még a szellemeket is beengedi.','A kollégiumban lakom. A zuhany nyomása edzi a jellemet.']},
-{name:'Árnyék',role:'vendéghallgató · sportpszichológia',pos:[1,0,-7],human:false,lines:['Minden rendben. Mindig is itt tanultam. A jelenléti ív szerint is. A jelenléti ív sosem téved.'],answers:['Nem emlékszem, milyen az eső. De egyszer láttam egy képen.','Azt szeretem a legjobban az egyetemen, hogy az órarend… létezik.','A tükrök? Csak elvonják a figyelmet a teljesítményről.']},
+const host=document.getElementById('game');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x111a20);scene.fog=new THREE.FogExp2(0x111a20,.019);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,130);camera.position.set(0,1.68,2.7);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;host.appendChild(renderer.domElement);
+const hemi=new THREE.HemisphereLight(0x9eabb5,0x17191b,1.15);scene.add(hemi);
+const lamps=[],colliders=[],actors=[];
+const C=(c,r=.86,m=.04)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+const plaster=C(0xa5a8a4),blue=C(0x415b70),darkBlue=C(0x263640),tile=C(0x575c5b),ceiling=C(0x5d6260),black=C(0x151a1e),metal=C(0x727a7c,.55,.58),wood=C(0x594b3c),cream=C(0xc8c4b8);
+function addBox(w,h,d,material,x,y,z,solid=false,rotY=0){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);o.position.set(x,y,z);o.rotation.y=rotY;o.castShadow=true;o.receiveShadow=true;scene.add(o);if(solid)colliders.push({minX:x-w/2,maxX:x+w/2,minZ:z-d/2,maxZ:z+d/2});return o}
+function makeTileTexture(){const c=document.createElement('canvas');c.width=c.height=512;const q=c.getContext('2d');q.fillStyle='#555a58';q.fillRect(0,0,512,512);for(let y=0;y<512;y+=64)for(let x=0;x<512;x+=64){q.fillStyle=((x+y)/64)%2?'#5d625f':'#505553';q.fillRect(x+1,y+1,62,62);q.strokeStyle='#737875';q.lineWidth=1;q.strokeRect(x+1,y+1,62,62)}for(let i=0;i<1200;i++){q.fillStyle='rgba(10,12,12,'+(Math.random()*.16)+')';q.fillRect(Math.random()*512,Math.random()*512,2,2)}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,16);return t}
+function makePlasterTexture(){const c=document.createElement('canvas');c.width=c.height=256;const q=c.getContext('2d');q.fillStyle='#a7aaa5';q.fillRect(0,0,256,256);for(let i=0;i<2200;i++){const v=Math.random()*70;q.fillStyle='rgba('+v+','+v+','+v+','+(Math.random()*.12)+')';q.fillRect(Math.random()*256,Math.random()*256,2,2)}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t}
+const floorMat=new THREE.MeshStandardMaterial({map:makeTileTexture(),roughness:.92}),wallMat=new THREE.MeshStandardMaterial({map:makePlasterTexture(),color:0xffffff,roughness:.96});
+function floor(w,d,x,z,material=floorMat){const o=new THREE.Mesh(new THREE.PlaneGeometry(w,d),material);o.rotation.x=-Math.PI/2;o.position.set(x,0,z);o.receiveShadow=true;scene.add(o);return o}
+function wallX(x,z1,z2,h=4.3,material=wallMat){return addBox(.24,h,Math.abs(z2-z1),material,x,h/2,(z1+z2)/2,true)}
+function wallZ(z,x1,x2,h=4.3,material=wallMat){return addBox(Math.abs(x2-x1),h,.24,material,(x1+x2)/2,h/2,z,true)}
+function light(x,y,z,intensity=8,color=0xe0e5dd,range=10){const l=new THREE.PointLight(color,intensity,range,2);l.position.set(x,y,z);scene.add(l);lamps.push({light:l,base:intensity,phase:Math.random()*12,rate:.6+Math.random()*2.5,spike:Math.random()>.7});return l}
+function ceilingSpan(w,d,x,z){addBox(w,.18,d,ceiling,x,4.25,z)}
+// K1-inspired main corridor: cool blue wayfinding stripe, pale walls, window bays and benches.
+floor(8,40,0,-17);ceilingSpan(8,40,0,-17);
+const doorCenters=[-1,-13,-25],doorHalf=1.35;
+for(const side of [-1,1]){
+ const x=side*4.05;let cursor=3;
+ for(const dz of doorCenters){const high=dz+doorHalf,low=dz-doorHalf;if(cursor>high)wallX(x,cursor,high);cursor=low}
+ if(cursor>-37)wallX(x,cursor,-37);
+ // long waist-height blue guidance band, broken at openings
+ for(let z=-36;z<3;z+=8)addBox(.06,.22,6,blue,side*3.91,1.18,z,false);
+}
+wallZ(-37,-4,4);wallZ(3,-4,4);
+for(let z=-36;z<2;z+=4){addBox(7.6,.045,.045,metal,0,.16,z);addBox(7.6,.045,.045,cream,0,.2,z+.09)}
+for(let i=0;i<9;i++){const z=1-i*4.4;addBox(2.3,.08,.6,black,0,4.12,z);addBox(1.6,.025,.12,cream,0,4.065,z);light(0,3.8,z,8,i===4?0xffd6aa:0xe1e8eb,12)}
+// Doorways with metal frames and slightly ajar dark doors. The rooms each have their own light.
+function doorFrame(side,z,roomName){
+ const x=side*3.94;for(const dz of [-1.34,1.34])addBox(.16,2.75,.14,metal,x,1.38,z+dz,false);
+ addBox(.16,.16,2.8,metal,x,2.73,z,false);
+ const leaf=addBox(.12,2.58,2.48,wood,side*4.82,1.3,z, false, side*-.34);
+ // dark inset panel and tiny TF room plate
+ addBox(.025,1.8,1.28,black,side*4.72,1.35,z,false,side*-.34);
+ const canv=document.createElement('canvas');canv.width=512;canv.height=128;const c=canv.getContext('2d');c.fillStyle='#19262f';c.fillRect(0,0,512,128);c.fillStyle='#d5d3c8';c.font='bold 40px Arial';c.fillText(roomName,15,80);const tex=new THREE.CanvasTexture(canv);const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.35,.34),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));sign.position.set(side*4.13,2.38,z);sign.rotation.y=side*Math.PI/2;scene.add(sign);
+}
+const rooms=[
+{side:-1,center:-1,name:'STUDIO 01',kind:'studio'},
+{side:1,center:-1,name:'LOCKER ROOM',kind:'locker'},
+{side:-1,center:-13,name:'LECTURE 204',kind:'lecture'},
+{side:1,center:-13,name:'PHYSIO LAB',kind:'physio'},
+{side:-1,center:-25,name:'ARCHIVE / K3',kind:'archive'},
+{side:1,center:-25,name:'SPORTS HALL',kind:'gym'}
 ];
-function makeStudent(s,i){
+for(const r of rooms){
+ const s=r.side,c=r.center,x=s*9,z1=c-5,z2=c+5;
+ floor(9.8,9.8,x,c);ceilingSpan(9.8,9.8,x,c);
+ wallX(s*14,z1,z2);wallZ(z1,s*4,s*14);wallZ(z2,s*4,s*14);
+ // windows on the outer wall, framed in cold metal
+ for(let j=0;j<2;j++){const wz=c-2.3+j*4.6;addBox(.08,2.15,1.7,C(0x293e49,.3,.2),s*13.83,2.55,wz);addBox(.1,.07,1.85,metal,s*13.77,1.47,wz);addBox(.1,.07,1.85,metal,s*13.77,3.62,wz);addBox(.1,2.2,.06,metal,s*13.77,2.55,wz)}
+ doorFrame(s,c,r.name);
+ light(s*9,3.5,c,r.kind==='gym'?6:4.8,r.kind==='archive'?0xd2d9dd:0xc9d6df,11);
+}
+// Double-height lobby / stairwell at the end, with an access-control desk and a barred holding cell.
+floor(22,8,0,-41);ceilingSpan(22,8,0,-41);wallZ(-45,-11,11);wallX(-11,-45,-37);wallX(11,-45,-37);
+for(let side of [-1,1]){for(let i=0;i<9;i++){addBox(1.18,.28,.55,wood,side*(2.1+i*.88),.25+i*.22,-42.8-i*.31,true);addBox(.12,3,.12,metal,side*3.1,1.5,-37.2)}}
+for(let y=0;y<3;y++){addBox(2.5,.12,.12,metal,0,y*1.1+.3,-44.1);for(let x of [-1.2,1.2])addBox(.1,3,.1,metal,x,1.5,-44.1)}
+addBox(3,.16,.12,metal,0,3,-44.1);
+for(let x=-10;x<=10;x+=2){addBox(.12,3.6,.12,metal,x,1.8,-44.8);addBox(.1,.12,2,metal,x,3.55,-43.8)}
+// Room-specific furniture, sports gear, notice boards and tired campus details.
+function poster(x,z,title,sub='TF · 1925'){const c=document.createElement('canvas');c.width=384;c.height=512;const q=c.getContext('2d');q.fillStyle='#e4e0d5';q.fillRect(0,0,384,512);q.fillStyle='#2b465a';q.fillRect(0,0,384,114);q.fillStyle='#f4f1e8';q.font='bold 36px Arial';q.fillText(title,20,68);q.fillStyle='#23313a';q.font='bold 21px Arial';q.fillText(sub,21,151);q.strokeStyle='#324857';q.lineWidth=6;q.strokeRect(14,14,356,484);for(let i=0;i<4;i++){q.fillStyle=['#bd4f48','#c3ab6e','#607982','#d4d2c8'][i];q.fillRect(25+i*80,210,58,180)}const tex=new THREE.CanvasTexture(c);const p=new THREE.Mesh(new THREE.PlaneGeometry(1.25,1.65),new THREE.MeshBasicMaterial({map:tex}));p.position.set(x,2.2,z);scene.add(p)}
+poster(-3.82,-7,'HALL OF FAME','100 YEARS OF TF');poster(3.82,-18,'SPORT SCIENCE','MOVE · STUDY · REPEAT');poster(-3.82,-31,'ATTENDANCE','NO EXCEPTIONS');
+for(let z=-5;z>-35;z-=7){
+ addBox(2.5,.34,.62,wood,-3.18,.45,z,true);addBox(2.5,.34,.62,wood,3.18,.45,z-2,true);
+ // radiator and campus window recesses
+ addBox(.26,.62,2.4,metal,-3.78,.45,z-1);addBox(.26,.62,2.4,metal,3.78,.45,z+1);
+}
+function lockers(x,z,count=6){for(let i=0;i<count;i++){const zz=z+i*.72;addBox(.62,2.2,.62,i%2?C(0x59656b):C(0x4b5b63),x,1.1,zz,true);addBox(.05,.07,.05,metal,x+.23,1.12,zz-.23);for(let j=0;j<3;j++)addBox(.03,.025,.16,black,x+.31,1.55-j*.12,zz-.02)}}
+lockers(-12.8,-4,7);
+for(let i=0;i<3;i++){addBox(1.3,.25,2.2,blue,-10+i*2,0.14,-13);addBox(.12,.42,.12,metal,-10.55+i*2,0.55,-13);addBox(.12,.42,.12,metal,-9.45+i*2,0.55,-13)}
+for(let row=0;row<3;row++)for(let col=0;col<4;col++){const x=5.4+col*1.8,z=-11.3+row*2.4;addBox(1.25,.32,.56,wood,x,.62,z,true);addBox(.07,.8,.07,metal,x-.48,.4,z);addBox(.07,.8,.07,metal,x+.48,.4,z)}
+// lecture room: scuffed tables, chalkboard, stack of plastic chairs
+addBox(7,.05,.04,black,9,2.25,-17.82);poster(13.82,-13,'SPORTS','SCIENCE');
+for(let row=0;row<3;row++)for(let col=0;col<3;col++){const x=5.3+col*2.55,z=-16.1+row*2.2;addBox(1.8,.12,.78,wood,x,.88,z,true);addBox(.08,.75,.08,metal,x-.72,.38,z);addBox(.08,.75,.08,metal,x+.72,.38,z)}
+// physio lab: parallel bars, padded bench, anatomical chart
+for(let x of [6,10,12]){addBox(.09,1.2,6,metal,x,.62,-12.7,true);addBox(.1,.1,6,metal,x,1.22,-12.7)}
+addBox(2.8,.42,1.1,blue,8.5,.44,-16,true);addBox(2.2,.05,.1,cream,8.5,.67,-16);
+poster(13.82,-14,'MOBILITY','ASSESSMENT ROOM');
+// archive shelving and dusty storage boxes
+for(let x of [-12,-9,-6]){for(let y of [.55,1.4,2.25])addBox(2,.08,.5,wood,x,y,-25,true);for(let i=0;i<4;i++)addBox(.36,.55,.42,i%2?cream:wood,x-.72+i*.46,yFor(.55),-25)}
+function yFor(y){return y+.34}
+for(let x of [5.7,8.5,11.3]){addBox(.26,2.8,7,wood,x,1.4,-25,true);for(let y=.55;y<2.8;y+=.72)addBox(.28,.08,7,metal,x,y,-25)}
+// sports hall details: court lines, basketball hoops and a folded gymnastics mat
+for(let x of [5,13]){addBox(.08,.06,7,cream,x,.02,-25);addBox(.1,3.2,.1,metal,x,1.6,-21.6);addBox(1.25,.08,.1,metal,x,3.2,-21.6);addBox(.06,1,.06,cream,x,2.65,-21.6)}
+for(let i=0;i<4;i++)addBox(1.2,.38,.9,i%2?blue:darkBlue,5.3+i*1.35,.2,-28.2,true);
+function ball(x,y,z,color){const o=new THREE.Mesh(new THREE.SphereGeometry(.23,16,12),C(color,.5));o.position.set(x,y,z);o.castShadow=true;scene.add(o);return o}
+ball(10,.25,-29,0xb64939);ball(11,.24,-12,0xb64939);ball(-6,.24,-4,0x47728c);
+// Archive canisters and notice board; closed cafeteria hatch as a nod to late campus shifts.
+addBox(1.3,1.1,.5,wood,12.8,1.35,-4,true);addBox(.6,.09,.08,metal,12.1,1.5,-3.72);
+function createPerson(s,i){
  const g=new THREE.Group();g.position.set(...s.pos);g.userData.student=s;
- const bodyMat=mat(npcMat[i],.78),skin=mat(s.human?0xc79570:0xd1d5c3),pants=mat(0x282c2a);
- const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.7,4,8),bodyMat);torso.position.y=1.05;torso.castShadow=true;g.add(torso);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),skin);head.position.y=1.75;head.castShadow=true;g.add(head);
- const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.PI*.55),mat(i%2?0x3b2b22:0x2d3028));hair.position.y=1.84;g.add(hair);
- for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.1,.13,.72,8),pants);leg.position.set(x,.42,0);g.add(leg)}
- for(const x of [-.39,.39]){const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.54,3,6),skin);arm.position.set(x,1.03,0);arm.rotation.z=x<0?-.12:.12;g.add(arm)}
- // A student lanyard and messenger bag make silhouettes legible from across the hall.
- const strap=new THREE.Mesh(new THREE.TorusGeometry(.25,.025,5,16,Math.PI),mat(0xd6bd6c));strap.position.set(0,1.32,.18);strap.rotation.z=Math.PI;g.add(strap);
- const shadow=new THREE.Mesh(new THREE.CircleGeometry(.43,16),new THREE.MeshBasicMaterial({color:0x050908,transparent:true,opacity:.45}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.015;g.add(shadow);
-
+ const jacketColors=[0x202a30,0x29353c,0x17232b,0x31383a,0x20282e,0x263944,0x242c30,0x18232a];
+ const top=C(jacketColors[i%jacketColors.length],.82),shirt=C(i%3===0?0xc5c3b8:0x455b68),skin=C([0xc58e71,0xd5a07d,0xa9735b,0xe0b694,0xbb876e,0xd3a187,0x966b57,0xc58f73][i],.92),trousers=C(i%2?0x22292d:0x30363a),shoe=C(0x111518,.8,.12);
+ // detailed tracksuit body and layered shirt, a tiny embroidered TF badge and piping
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.64,5,10),top);torso.position.y=1.12;torso.castShadow=true;g.add(torso);
+ const shirtFront=new THREE.Mesh(new THREE.BoxGeometry(.33,.74,.025),shirt);shirtFront.position.set(0,1.12,.322);g.add(shirtFront);
+ const zipper=addPart(g,new THREE.BoxGeometry(.018,.62,.018),metal,0,.1,.35);
+ const badge=makeTextBadge('TF100');badge.position.set(-.21,1.34,.36);g.add(badge);
+ for(const side of [-1,1]){
+   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.62,4,8),trousers);leg.position.set(side*.18,.48,0);leg.castShadow=true;g.add(leg);
+   const stripe=new THREE.Mesh(new THREE.BoxGeometry(.027,.67,.014),C(0x87939a));stripe.position.set(side*.18+side*.1,.5,.105);g.add(stripe);
+   const shoeMesh=new THREE.Mesh(new THREE.BoxGeometry(.26,.13,.39),shoe);shoeMesh.position.set(side*.18,.12,.08);shoeMesh.castShadow=true;g.add(shoeMesh);
+   const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.37,4,8),top);upper.position.set(side*.4,1.24,0);upper.rotation.z=side*.1;g.add(upper);
+   const fore=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.3,4,8),skin);fore.position.set(side*.43,.88,.04);fore.rotation.z=side*.16;g.add(fore);
+   const hand=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),skin);hand.position.set(side*.44,.66,.06);g.add(hand);
+ }
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.18,10),skin);neck.position.y=1.58;g.add(neck);
+ const headGroup=new THREE.Group();headGroup.position.y=1.83;g.add(headGroup);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.255,18,14),skin);head.scale.set(1,.98,.9);head.castShadow=true;headGroup.add(head);
+ const hair=C(i%2?0x332a25:0x292a27);
+ const cap=new THREE.Mesh(new THREE.SphereGeometry(.262,16,8,0,Math.PI*2,0,Math.PI*.6),hair);cap.position.y=.09;headGroup.add(cap);
+ for(const side of [-1,1]){
+   const eyeWhite=new THREE.Mesh(new THREE.SphereGeometry(.043,10,8),C(0xcac7bc));eyeWhite.position.set(side*.092,.015,.217);headGroup.add(eyeWhite);
+   const iris=new THREE.Mesh(new THREE.SphereGeometry(.021,8,8),C(0x312a25,.4));iris.position.set(side*.092,.012,.252);headGroup.add(iris);
+   const brow=new THREE.Mesh(new THREE.BoxGeometry(.09,.025,.03),hair);brow.position.set(side*.09,.085,.218);headGroup.add(brow);
+   const ear=new THREE.Mesh(new THREE.SphereGeometry(.05,8,8),skin);ear.position.set(side*.25,-.015,0);headGroup.add(ear)
+ }
+ const nose=new THREE.Mesh(new THREE.ConeGeometry(.045,.11,7),skin);nose.rotation.x=Math.PI/2;nose.position.set(0,-.015,.255);headGroup.add(nose);
+ const mouth=new THREE.Mesh(new THREE.BoxGeometry(.11,.018,.018),C(0x65433e));mouth.position.set(0,-.105,.229);headGroup.add(mouth);
+ // hood seam, drawstrings, cuffs and lanyard make each silhouette more human and layered
+ for(const side of [-1,1]){const cord=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,.18,5),cream);cord.position.set(side*.07,1.45,.34);g.add(cord)}
+ const lanyard=new THREE.Mesh(new THREE.TorusGeometry(.22,.018,5,18,Math.PI),C(0xb7a979));lanyard.position.set(0,1.38,.28);lanyard.rotation.z=Math.PI;g.add(lanyard);
+ const badge2=makeTextBadge(String(102+i));badge2.scale.set(.42,.42,.42);badge2.position.set(.11,1.08,.37);g.add(badge2);
+ // backpacks for selected students
+ if(i%3!==1){const bag=new THREE.Mesh(new THREE.BoxGeometry(.44,.56,.2),C(i%2?0x343b3d:0x4a4d49));bag.position.set(0,1.04,-.31);bag.castShadow=true;g.add(bag);for(const side of [-1,1]){const strap=new THREE.Mesh(new THREE.TorusGeometry(.28,.025,5,12,Math.PI),C(0x737a78));strap.position.set(side*.19,1.2,-.18);strap.rotation.y=Math.PI;g.add(strap)}}
+ // soft oval floor shadow. The impostor's shadow has a barely wrong offset.
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(.42,20),new THREE.MeshBasicMaterial({color:0x020304,transparent:true,opacity:.54,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.set(s.anomaly==='shadow'?.11:0,.018,s.anomaly==='shadow'?.06:0);g.add(shadow);
+ if(s.anomaly==='eye'){const alienIris=new THREE.Mesh(new THREE.SphereGeometry(.022,8,8),C(0x817365,.3));alienIris.scale.y=1.45;alienIris.position.set(-.092,1.842,.252);g.add(alienIris)}
+ // tiny sixth crease in one knuckle, visible only nearby and under side light
+ if(s.anomaly==='finger'){const mark=new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.075,5),skin);mark.position.set(.47,.69,.09);mark.rotation.z=.7;g.add(mark)}
  scene.add(g);return g
 }
-let actors=students.map(makeStudent);
-const keys={};let started=false,locked=false,dialogOpen=false,detained=0,questioned=new Set(),asked=new Map(),current=null;
-const ray=new THREE.Raycaster();const center=new THREE.Vector2(0,0);let nearActor=null;
-function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>e.classList.remove('show'),2600)}
-function updateHud(){document.getElementById('casecount').textContent=questioned.size+' / 5';document.getElementById('detained').textContent=detained;document.getElementById('objective').textContent=detained?'A helyszín majdnem tiszta. Még '+(5-questioned.size)+' hallgatóval beszélj.':'Beszélj mindenkivel. A részletek számítanak.'}
-function openDialog(s){
- current=s;dialogOpen=true;document.exitPointerLock?.();document.getElementById('dialogue').style.display='flex';
- document.getElementById('person').textContent=s.name+' · '+s.role;document.getElementById('personTag').textContent='HALLGATÓ';
- document.getElementById('dialogtext').textContent=s.lines[0];
- const choices=document.getElementById('choices');choices.innerHTML='';
- const prompts=['Mit csináltál ma este?','Mi a legfurább dolog a campuson?','Mondj valamit, amit csak egy TF-es tud.'];
- prompts.forEach((q,i)=>{const b=document.createElement('button');b.textContent=q;b.onclick=()=>ask(i);choices.appendChild(b)});
- const accuse=document.createElement('button');accuse.className='warn';accuse.textContent='Azonosítás: alakváltó vagy.';accuse.onclick=()=>accuseStudent(s);choices.appendChild(accuse);
-}
-function ask(i){
- const s=current;const dlg=document.getElementById('dialogtext');
- dlg.textContent=s.answers[i];const evidence=asked.get(s.name)||new Set();evidence.add(i);asked.set(s.name,evidence);questioned.add(s.name);updateHud();
- // Clues emerge through inconsistent details, not a supernatural lie detector.
- if(!s.human&&i===1)toast('A válasz túl sima. Még a portás is panaszkodik a huzatra.');
- else if(!s.human&&i===2)toast('A „Neptun” szót úgy ejtette, mintha folyó lenne.');
- else if(s.human&&i===0)toast('Ez hihető. És sajnos nagyon egyetemi.');
- else toast('Feljegyezve az aktába. A részletek nem állnak össze… vagy csak fáradt vagy.');
-}
-function accuseStudent(s){
- const evidence=asked.get(s.name);if(!evidence||evidence.size<2){toast('Még két különböző kérdésre adott válasz kell, mielőtt őrizetbe veszed.');return}
- document.getElementById('dialogue').style.display='none';dialogOpen=false;
- if(!s.human){detained++;const idx=actors.findIndex(a=>a.userData.student===s);if(idx>=0){const a=actors[idx];a.position.set(0,0,-17);a.scale.set(.72,.62,.72);a.rotation.y=Math.PI/2}
- toast('Célpont biztosítva. A zárka kulcsa a portásnál van. Valószínűleg.');
- if(detained>=1){document.getElementById('objective').textContent='Az alakváltó bezárva. Zárd le az ügyet!';setTimeout(()=>finish(true),1400)}
- }else{toast('Téves azonosítás. '+s.name+' csak szeretne végre hazamenni.');document.getElementById('objective').textContent='A gyanú nem bizonyíték. Folytasd a kérdezést.'}
- updateHud();if(locked)renderer.domElement.requestPointerLock()
-}
-function finish(ok){document.getElementById('hud').style.display='none';const e=document.getElementById('end');e.style.display='flex';document.exitPointerLock?.();document.getElementById('endtitle').textContent=ok?'A jelenlét igazolva.':'Ügy lezárva.';
-document.getElementById('endtext').textContent=ok?'Az alakváltó a zárkában van, a campus viszonylag biztonságos, és valaki eltüntette az összes kakaós csigát. A jelentés szerint ez „járulékos veszteség”.':'A történtek után a portás hazakísérte a hallgatót. Holnap újra próbálkozol.'}
-document.getElementById('restart').onclick=()=>location.reload();
-function move(){if(!started||dialogOpen)return;const speed=3.4*(keys.Shift?1.5:1);const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));if(keys.KeyW||keys.ArrowUp)camera.position.addScaledVector(f,speed*dt);if(keys.KeyS||keys.ArrowDown)camera.position.addScaledVector(f,-speed*dt);if(keys.KeyA||keys.ArrowLeft)camera.position.addScaledVector(r,-speed*dt);if(keys.KeyD||keys.ArrowRight)camera.position.addScaledVector(r,speed*dt);camera.position.x=THREE.MathUtils.clamp(camera.position.x,-10.8,10.8);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-17.2,7.8);camera.position.y=1.68}
-let yaw=0,pitch=0,dt=0,last=performance.now();
-renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen)renderer.domElement.requestPointerLock()});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement});
-document.addEventListener('mousemove',e=>{if(!locked||dialogOpen)return;yaw-=e.movementX*.0022;pitch-=e.movementY*.0022;pitch=THREE.MathUtils.clamp(pitch,-1.25,1.25);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)});
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&nearActor&&!dialogOpen)openDialog(nearActor.userData.student);if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)renderer.domElement.requestPointerLock()}});
-document.addEventListener('keyup',e=>keys[e.code]=false);
-function tick(now){requestAnimationFrame(tick);dt=Math.min((now-last)/1000,.04);last=now;move();
- if(started&&!dialogOpen){ray.setFromCamera(center,camera);const meshes=[];actors.forEach(a=>a.traverse(o=>{if(o.isMesh)meshes.push(o)}));const hits=ray.intersectObjects(meshes,false);nearActor=null;
- if(hits.length&&hits[0].distance<3.3){let o=hits[0].object;while(o.parent&&!o.userData.student)o=o.parent;if(o.userData.student){nearActor=o;document.getElementById('prompt').textContent='E — BESZÉLGETÉS: '+o.userData.student.name.toUpperCase()}else document.getElementById('prompt').textContent=''}else document.getElementById('prompt').textContent=''
+function addPart(g,geo,material,x,y,z){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);g.add(m);return m}
+function makeTextBadge(text){const c=document.createElement('canvas');c.width=160;c.height=80;const q=c.getContext('2d');q.fillStyle='#111820';q.fillRect(0,0,160,80);q.strokeStyle='#d3cba8';q.lineWidth=4;q.strokeRect(2,2,156,76);q.fillStyle='#eee8d8';q.font='bold 31px Arial';q.fillText(text,10,52);const tex=new THREE.CanvasTexture(c);return new THREE.Mesh(new THREE.PlaneGeometry(.28,.14),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}))}
+const students=[
+{name:'Eszter',role:'Sports management · first year',pos:[-7.2,0,-1],human:true,anomaly:'none',topics:['The evening','The hall of fame','Your training'],opening:'I am waiting for my roommate. She said two minutes about forty minutes ago. So, a normal university evening.',answers:['I finished a group presentation. We have fourteen slides and one shared opinion: the printer is haunted.','The portraits by the stairs. I keep thinking one of the coaches moved between frames.','Mostly running drills. My knees now make the same sound as the old doors.']},
+{name:'Máté',role:'Volleyball · sports science',pos:[7.2,0,-2],human:true,anomaly:'none',topics:['The match','The vending machine','Your wrist'],opening:'If you hear a ball bouncing, it is probably me. If it bounces back, that is someone else.',answers:['We had practice in the sports hall. I served one ball into a mop bucket. Coach called it an innovative target drill.','It took my card, gave me water, then displayed "THANK YOU, ANNA". I am not Anna.','I sprained it last week. The physiotherapy lab taped it up. The tape is still stuck to my hoodie.']},
+{name:'Zsófi',role:'Physiotherapy · second year',pos:[-7.6,0,-13],human:true,anomaly:'none',topics:['The late class','Room 204','Your notes'],opening:'I am not lost. I am conducting a very slow mobility assessment of this corridor.',answers:['We had a practical in the lab. Someone left a skeleton model in the lift again. I named it Tibor.','The projector always takes three tries. The lecturer says this builds resilience. It builds a queue.','These are my notes. I draw little feet in the margins so I remember which muscle is doing what.']},
+{name:'Bence',role:'Strength and conditioning · senior',pos:[7.4,0,-12.4],human:true,anomaly:'none',topics:['The training session','The locker room','Your coach'],opening:'I am waiting for the showers to stop making that noise. It sounds like a whistle from inside the pipes.',answers:['Leg day. The stairs are now an exam I did not study for.','A locker keeps opening by itself. I have started saying "excuse me" before I walk past it.','Coach says I need to work on my focus. I am focusing very hard on not going back in there.']},
+{name:'Lilla',role:'Recreation · visiting student',pos:[-8.2,0,-25],human:false,anomaly:'eye',topics:['The archive','The campus map','Your hometown'],opening:'I have been here all evening. I think. The lights make time feel… flat.',answers:['I was looking for a book about sleep. The archive catalogue returned a list of people who were awake.','It has too many corridors. I followed the blue line and ended up behind the same noticeboard twice.','I do not remember the name. It is a small place, with a road and a station. The station may have been closed.']},
+{name:'Péter',role:'Track and field · third year',pos:[7.3,0,-25.5],human:true,anomaly:'none',topics:['The running track','The sports hall','Your lap time'],opening:'The track is empty, but I keep hearing somebody finishing a lap behind me.',answers:['I did two cooldown laps. The third one was for my ego. It did not help.','There is a whistle in the equipment cupboard. Nobody has touched it, but it keeps answering the one outside.','One minute twelve. My personal best is faster, but my personal best had better shoes.']},
+{name:'Réka',role:'Sport psychology · graduate student',pos:[-1.5,0,-32],human:true,anomaly:'none',topics:['The stairwell','The portrait gallery','Your research'],opening:'Do you ever get the feeling the building is waiting for the last person to leave?',answers:['I was looking for a quiet place to finish an interview transcript. The stairwell has excellent acoustics for regrets.','They all look straight ahead. Except the one by the second-floor landing. I think it is looking at the wall.','I study team trust. Tonight’s sample size is one very tired graduate student.']},
+{name:'Áron',role:'Sports nutrition · exchange student',pos:[5.2,0,-39.5],human:false,anomaly:'shadow',topics:['The locked room','The cafeteria','Your student card'],opening:'The building is very quiet now. I can hear the lights thinking.',answers:['I have not been in the holding room. I mean the store room. Is that what you asked?','I do not eat after midnight. My body does not need food. That is what I meant. I do not need food after training.','My card has my name on the back. I cannot read it from here, but I know it is there.']},
+];
+for(let i=0;i<students.length;i++)actors.push(createPerson(students[i],i));
+const roomProps=new Map(rooms.map(r=>[r.kind,r]));
+// More background students create a busy campus feel; each has a distinct idle pose and is not an interview target.
+function silhouette(x,z,shirtColor,pose=0){const g=new THREE.Group();g.position.set(x,0,z);const t=new THREE.Mesh(new THREE.CapsuleGeometry(.32,.65,4,8),C(shirtColor));t.position.y=1.08;g.add(t);const h=new THREE.Mesh(new THREE.SphereGeometry(.23,12,10),C(0x8c7668));h.position.y=1.8;g.add(h);for(const sx of [-.16,.16]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.095,.12,.76,8),C(0x24292b));l.position.set(sx,.4,0);g.add(l)}if(pose){t.rotation.z=.12;h.rotation.x=.18}scene.add(g)}
+silhouette(-2.1,0,0x283741,1);silhouette(2.2,-8,0x4b3d36);silhouette(-2.5,-19,0x334c55,1);silhouette(2.4,-31,0x4c4537);silhouette(-2,-38,0x3a4443,1);
+// Persistent audio: original Web Audio drone, filtered noise, and occasional metal creak; no external recording.
+let audioCtx=null,musicGain=null,audioEnabled=false,noiseNode=null,creakTimer=null;
+function startSound(){
+ if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC){toast('This browser does not support audio.');return}audioCtx=new AC();
+   musicGain=audioCtx.createGain();musicGain.gain.value=0;musicGain.connect(audioCtx.destination);
+   const low=audioCtx.createOscillator(),lowGain=audioCtx.createGain();low.type='sine';low.frequency.value=43;lowGain.gain.value=.21;low.connect(lowGain);lowGain.connect(musicGain);low.start();
+   const mid=audioCtx.createOscillator(),midGain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();mid.type='triangle';mid.frequency.value=58;filter.type='lowpass';filter.frequency.value=180;midGain.gain.value=.08;mid.connect(filter);filter.connect(midGain);midGain.connect(musicGain);mid.start();
+   const lfo=audioCtx.createOscillator(),lfoGain=audioCtx.createGain();lfo.frequency.value=.07;lfoGain.gain.value=14;lfo.connect(lfoGain);lfoGain.connect(mid.frequency);lfo.start();
+   const length=audioCtx.sampleRate*2,buffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<length;i++)data[i]=(Math.random()*2-1)*.12;
+   noiseNode=audioCtx.createBufferSource();noiseNode.buffer=buffer;noiseNode.loop=true;const bp=audioCtx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=330;bp.Q.value=.55;const ng=audioCtx.createGain();ng.gain.value=.17;noiseNode.connect(bp);bp.connect(ng);ng.connect(musicGain);noiseNode.start();
+   creakTimer=setInterval(()=>{if(!audioEnabled||!audioCtx)return;const now=audioCtx.currentTime,osc=audioCtx.createOscillator(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(320+Math.random()*170,now);osc.frequency.exponentialRampToValueAtTime(58+Math.random()*35,now+1.8);f.type='lowpass';f.frequency.value=680;g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.12,now+.12);g.gain.exponentialRampToValueAtTime(.0001,now+2);osc.connect(f);f.connect(g);g.connect(musicGain);osc.start(now);osc.stop(now+2.05)},12000+Math.random()*8000);
  }
- actors.forEach((a,i)=>{if(a.position.z>-16&&i!==4){a.rotation.y=Math.sin(now*.00045+i)*.12;a.position.y=Math.sin(now*.002+i)*.025}});
- lamp.intensity=32+Math.sin(now*.002)*3;renderer.render(scene,camera)}
+ audioCtx.resume();audioEnabled=!audioEnabled;musicGain.gain.setTargetAtTime(audioEnabled?.32:0,audioCtx.currentTime,.7);document.getElementById('soundToggle').textContent='SOUND: '+(audioEnabled?'ON':'OFF');
+}
+function toast(text){const el=document.getElementById('toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3000)}
+const questionsAsked=new Map(),interviewed=new Set();let contained=0,started=false,dialogOpen=false,locked=false,current=null,near=null;
+function updateHud(){document.getElementById('interviewCount').textContent=interviewed.size+' / 8';document.getElementById('containedCount').textContent=contained+' / 2';document.getElementById('objective').textContent=contained?'The holding room is secured. Find the other one.':'Interview the students. Watch the small details.'}
+function openInterview(s){current=s;dialogOpen=true;document.exitPointerLock?.();document.getElementById('dialogue').style.display='flex';document.getElementById('person').textContent=s.name;document.getElementById('role').textContent=s.role;document.getElementById('dtext').textContent=s.opening;const box=document.getElementById('choices');box.innerHTML='';
+ s.topics.forEach((topic,i)=>{const b=document.createElement('button');b.textContent='Ask about '+topic.toLowerCase();b.onclick=()=>ask(s,i);box.appendChild(b)});
+ const a=document.createElement('button');a.className='warn';a.textContent='Identify as a shapeshifter';a.onclick=()=>accuse(s);box.appendChild(a);
+}
+function ask(s,i){const seen=questionsAsked.get(s.name)||new Set();seen.add(i);questionsAsked.set(s.name,seen);interviewed.add(s.name);document.getElementById('dtext').textContent=s.answers[i];updateHud();
+ if(!s.human&&i===0)toast(s.anomaly==='eye'?'For one instant, Lilla’s left pupil seems too narrow. You cannot be sure.':'The answer pauses, as though it is searching for the right memory.');
+ else if(!s.human&&i===1)toast(s.anomaly==='shadow'?'The light shifts. Áron’s shadow takes a moment to follow. Maybe it is the flickering bulb.':'A detail in the story does not match the room.');
+ else if(!s.human)toast('You have heard the words before. Not from this person.');
+ else toast('You make a note. Tired students can sound strange at midnight.');
+}
+function accuse(s){const seen=questionsAsked.get(s.name);if(!seen||seen.size<2){toast('Ask two different questions first. An interview is not evidence.');return}
+ document.getElementById('dialogue').style.display='none';dialogOpen=false;
+ if(s.human){toast('The student looks exhausted, then offended. Your handler asks for stronger evidence.');if(audioEnabled)sting();if(locked)renderer.domElement.requestPointerLock();return}
+ contained++;const actor=actors.find(a=>a.userData.student===s);if(actor){actor.position.set(-1.8+(contained-1)*1.7,0,-43.25);actor.rotation.y=Math.PI;actor.scale.set(.72,.76,.72)}
+ toast('The subject is secured in the holding room. Keep your eyes on the corridor.');updateHud();
+ if(contained>=2)setTimeout(()=>finish(),1800);if(locked)renderer.domElement.requestPointerLock()
+}
+function sting(){if(!audioCtx||!musicGain)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(160,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(42,audioCtx.currentTime+1);g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.15,audioCtx.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+1.2);o.connect(g);g.connect(musicGain);o.start();o.stop(audioCtx.currentTime+1.25)}
+function finish(){document.getElementById('hud').style.display='none';document.getElementById('end').style.display='flex';document.exitPointerLock?.();document.getElementById('endText').textContent='Both visitors are behind the holding-room bars. At dawn, the attendance sheet shows eight signatures. Your field report says there were only six students.'}
+document.getElementById('soundToggle').addEventListener('click',startSound);
+document.getElementById('start').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('hud').style.display='block';started=true;startSound();renderer.domElement.requestPointerLock?.();updateHud();toast('The night shift is still inside. Press E when someone is in the crosshair.')});
+const keys={};let yaw=0,pitch=0,dt=0,last=performance.now();
+document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
+document.addEventListener('mousemove',e=>{if(!dialogOpen&&(locked||started)){if(locked||document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.15,1.15);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0)}}});
+renderer.domElement.addEventListener('click',()=>{if(started&&!dialogOpen&&!locked)renderer.domElement.requestPointerLock?.()});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&near&&!dialogOpen){if(near.student)openInterview(near.student);else if(near.action)near.action()}if(e.code==='Escape'&&dialogOpen){dialogOpen=false;document.getElementById('dialogue').style.display='none';if(started)renderer.domElement.requestPointerLock?.()}});
+document.addEventListener('keyup',e=>keys[e.code]=false);
+function collides(x,z){const r=.34;return colliders.some(c=>x+r>c.minX&&x-r<c.maxX&&z+r>c.minZ&&z-r<c.maxZ)}
+function move(){if(!started||dialogOpen)return;const speed=2.8*(keys.ShiftLeft||keys.ShiftRight?1.45:1),f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));let nx=camera.position.x,nz=camera.position.z;
+ if(keys.KeyW||keys.ArrowUp){nx+=f.x*speed*dt;nz+=f.z*speed*dt}if(keys.KeyS||keys.ArrowDown){nx-=f.x*speed*dt;nz-=f.z*speed*dt}if(keys.KeyA||keys.ArrowLeft){nx-=r.x*speed*dt;nz-=r.z*speed*dt}if(keys.KeyD||keys.ArrowRight){nx+=r.x*speed*dt;nz+=r.z*speed*dt}
+ if(!collides(nx,camera.position.z))camera.position.x=THREE.MathUtils.clamp(nx,-10.3,10.3);if(!collides(camera.position.x,nz))camera.position.z=THREE.MathUtils.clamp(nz,-44.2,2.5);camera.position.y=1.68}
+const ray=new THREE.Raycaster(),center=new THREE.Vector2(0,0);
+function tick(now){requestAnimationFrame(tick);dt=Math.min((now-last)/1000,.04);last=now;move();
+ for(const l of lamps){const wave=Math.sin(now*.001*l.rate+l.phase);l.light.intensity=l.base*(l.spike&&wave>.98?.35:1+wave*.045)}
+ if(started&&!dialogOpen){ray.setFromCamera(center,camera);let hits=[];for(const a of actors)a.traverse(o=>{if(o.isMesh)hits.push(o)});const hit=ray.intersectObjects(hits,false)[0];near=null;
+  if(hit&&hit.distance<3.4){let o=hit.object;while(o.parent&&!o.userData.student)o=o.parent;if(o.userData.student){near={student:o.userData.student};document.getElementById('prompt').textContent='E — TALK TO '+o.userData.student.name.toUpperCase()}else document.getElementById('prompt').textContent=''}else document.getElementById('prompt').textContent=''
+ }
+ actors.forEach((a,i)=>{const s=a.userData.student;if(s){const t=now*.001;a.position.y=Math.sin(t*1.7+i)*.018;a.rotation.y=Math.sin(t*.4+i)*.08;const h=a.children.find(o=>o.isGroup);if(h)h.rotation.y=Math.sin(t*.7+i)*.06;if(s.anomaly==='eye'&&Math.sin(t*2.8)>.94)h.scale.x=1.02}});
+ renderer.render(scene,camera)}
 requestAnimationFrame(tick);
-document.getElementById('start').onclick=()=>{document.getElementById('intro').style.display='none';document.getElementById('hud').style.display='block';started=true;renderer.domElement.requestPointerLock();toast('Ügynök, ne feledd: a hallgatók is gyanúsak. Főleg vizsgaidőszakban.');updateHud()};
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
 </html>
